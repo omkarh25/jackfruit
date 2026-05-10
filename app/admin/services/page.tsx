@@ -38,9 +38,7 @@ export default function AdminServicesPage() {
       ) : services.length === 0 ? (
         <div className="rounded-2xl bg-white p-12 text-center shadow-soft">
           <p className="text-lg text-tattvam-purple-400">No services found in Firestore.</p>
-          <a href="/admin/seed" className="btn-primary mt-4 inline-block text-sm">
-            🌱 Seed Data First
-          </a>
+          <p className="mt-2 text-sm text-tattvam-purple-400">Add services using the button above.</p>
         </div>
       ) : (
         <div className="overflow-hidden rounded-2xl bg-white shadow-soft">

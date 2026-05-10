@@ -186,7 +186,7 @@ export default function AdminDashboardPage() {
                   { label: "Add Workshop", href: "/admin/workshops", icon: "➕" },
                   { label: "Add Service", href: "/admin/services", icon: "✨" },
                   { label: "View Bookings", href: "/admin/consultations", icon: "📅" },
-                  { label: "Seed Data", href: "/admin/seed", icon: "🌱" },
+                  { label: "Manage Users", href: "/admin/users", icon: "👥" },
                 ].map((action) => (
                   <a
                     key={action.label}
