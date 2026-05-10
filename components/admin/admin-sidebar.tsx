@@ -16,6 +16,7 @@ const navItems = [
   { href: "/admin/notifications", label: "Notifications", icon: "🔔" },
   { href: "/admin/offers", label: "Offers & Coupons", icon: "🎁" },
   { href: "/admin/media", label: "Media Library", icon: "🖼️" },
+  { href: "/admin/seed", label: "🔧 Seed Data", icon: "🌱" },
 ] as const;
 
 export function AdminSidebar() {

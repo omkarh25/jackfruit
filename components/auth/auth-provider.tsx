@@ -4,13 +4,15 @@ import { onAuthStateChanged, signInWithPopup, signOut, type User } from "firebas
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import { getFirebaseAuth, getGoogleAuthProvider } from "@/lib/firebase";
 import { LOGGER } from "@/lib/logger";
-import { addPurchasedCourse, upsertProfileFromFirebaseUser } from "@/lib/profile-store";
+import { addPurchasedCourse, getStoredProfile } from "@/lib/profile-store";
+import { upsertUserProfile, getUserProfile, toUserProfile } from "@/lib/db/users";
 import type { UserProfile } from "@/lib/types";
 
 interface AuthContextValue {
   readonly firebaseUser: User | null;
   readonly profile: UserProfile | null;
   readonly isLoading: boolean;
+  readonly isAdmin: boolean;
   readonly loginWithGoogle: () => Promise<void>;
   readonly logout: () => Promise<void>;
   readonly unlockCourse: (courseId: string) => void;
@@ -19,29 +21,79 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 /**
- * Provides Firebase Google auth and local learner profile state to the app.
+ * Provides Firebase Google auth and learner profile state synced to Firestore.
  */
 export function AuthProvider({ children }: Readonly<{ children: React.ReactNode }>) {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Sync Firebase Auth user to Firestore profile on auth state change
   useEffect(() => {
     const auth = getFirebaseAuth();
-    return onAuthStateChanged(auth, (user) => {
+    return onAuthStateChanged(auth, async (user) => {
       setFirebaseUser(user);
-      setProfile(user ? upsertProfileFromFirebaseUser(user) : null);
+
+      if (user) {
+        try {
+          // Try to get existing Firestore profile
+          let firestoreProfile = await getUserProfile(user.uid);
+
+          if (!firestoreProfile) {
+            // Create new profile in Firestore
+            const stored = getStoredProfile(user.uid);
+            await upsertUserProfile(user.uid, {
+              uid: user.uid,
+              name: user.displayName ?? stored?.name ?? "Tatvam Learner",
+              email: user.email ?? stored?.email ?? "",
+              photoURL: user.photoURL ?? stored?.photoURL,
+              role: "learner",
+            });
+            firestoreProfile = await getUserProfile(user.uid);
+          }
+
+          const userProfile = firestoreProfile ? toUserProfile(firestoreProfile) : null;
+          setProfile(userProfile);
+          LOGGER.info("Auth state synced with Firestore", { uid: user.uid, role: firestoreProfile?.role });
+        } catch (err) {
+          LOGGER.error("Failed to sync profile to Firestore", { error: String(err) });
+          // Fallback to localStorage profile
+          const stored = getStoredProfile(user.uid);
+          setProfile(stored);
+        }
+      } else {
+        setProfile(null);
+      }
+
       setIsLoading(false);
-      LOGGER.info("Auth state changed", { isSignedIn: Boolean(user) });
     });
   }, []);
 
   const loginWithGoogle = useCallback(async () => {
     const auth = getFirebaseAuth();
     const result = await signInWithPopup(auth, getGoogleAuthProvider());
-    setFirebaseUser(result.user);
-    setProfile(upsertProfileFromFirebaseUser(result.user));
-    LOGGER.info("Google login completed", { uid: result.user.uid });
+    const user = result.user;
+
+    // Sync to Firestore immediately after login
+    try {
+      const existing = await getUserProfile(user.uid);
+      if (!existing) {
+        await upsertUserProfile(user.uid, {
+          uid: user.uid,
+          name: user.displayName ?? "Tatvam Learner",
+          email: user.email ?? "",
+          photoURL: user.photoURL ?? undefined,
+          role: "learner",
+        });
+      }
+      const firestoreProfile = await getUserProfile(user.uid);
+      setProfile(firestoreProfile ? toUserProfile(firestoreProfile) : null);
+    } catch (err) {
+      LOGGER.error("Failed to sync login to Firestore", { error: String(err) });
+    }
+
+    setFirebaseUser(user);
+    LOGGER.info("Google login completed", { uid: user.uid });
   }, []);
 
   const logout = useCallback(async () => {
@@ -64,9 +116,11 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     [profile]
   );
 
+  const isAdmin = profile?.uid ? false : false; // Will be set from Firestore role
+
   const value = useMemo(
-    () => ({ firebaseUser, profile, isLoading, loginWithGoogle, logout, unlockCourse }),
-    [firebaseUser, profile, isLoading, loginWithGoogle, logout, unlockCourse]
+    () => ({ firebaseUser, profile, isLoading, isAdmin, loginWithGoogle, logout, unlockCourse }),
+    [firebaseUser, profile, isLoading, isAdmin, loginWithGoogle, logout, unlockCourse]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

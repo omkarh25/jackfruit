@@ -1,5 +1,6 @@
 import { getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, type Auth } from "firebase/auth";
+import { getFirestore, type Firestore } from "firebase/firestore";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -11,7 +12,7 @@ const firebaseConfig = {
 };
 
 /**
- * Returns the singleton Firebase app instance for auth/storage integrations.
+ * Returns the singleton Firebase app instance for auth/storage/firestore integrations.
  */
 export function getFirebaseApp(): FirebaseApp {
   return getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
@@ -31,4 +32,15 @@ export function getGoogleAuthProvider(): GoogleAuthProvider {
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: "select_account" });
   return provider;
+}
+
+/**
+ * Returns Firestore database instance.
+ */
+let firestoreInstance: Firestore | null = null;
+export function getFirestoreDb(): Firestore {
+  if (!firestoreInstance) {
+    firestoreInstance = getFirestore(getFirebaseApp());
+  }
+  return firestoreInstance;
 }
