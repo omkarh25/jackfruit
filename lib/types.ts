@@ -10,6 +10,7 @@ export interface FeedItem {
 
 export interface ServiceOffering {
   readonly id: string;
+  readonly slug: string;
   readonly title: string;
   readonly description: string;
   readonly duration: string;
@@ -19,10 +20,14 @@ export interface ServiceOffering {
 
 export interface Workshop {
   readonly id: string;
+  readonly slug: string;
   readonly title: string;
   readonly date: string;
   readonly format: "Live Zoom" | "Recording";
   readonly description: string;
+  readonly longDescription?: string;
+  readonly price?: string;
+  readonly whatsappLink?: string;
 }
 
 export interface Course {

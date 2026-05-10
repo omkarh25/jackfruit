@@ -1,0 +1,122 @@
+Inner Power Camp Content
+SECTION 1:
+Layout Type: Full-width banner
+Image:
+ 
+Height: 90–100vh
+
+Content Alignment: Center-left (desktop) / center (mobile)
+Content:
+H1: Inner Power Camp for Kids
+H2: Not just a summer camp — a foundation for life
+Paragraph:
+A holistic experience designed to build confidence, emotional strength, and focus in children—through movement, mindfulness, creativity, and expression.
+Highlight Text (bold / accent color):
+This is not about keeping children busy.
+This is about shaping who they become.
+CTA Button:
+Enquire Now (link to WhatsApp 6363606088)
+
+
+🔷 [SECTION 2: ABOUT]
+Layout Type: 2-column (50/50)
+Left: Text
+Right: Image
+Content:
+H2: About Inner Power Camp
+Paragraph:
+At Tattvam Niramaya, we believe childhood is where confidence, emotional strength, and focus are built.
+This camp helps children connect with their inner world—while growing stronger in the outer world.
+
+Image:
+
+[SECTION 3: WHAT THIS CAMP BUILDS]
+Layout Type: 4-column grid (desktop) / 2-column (tablet) / 1-column (mobile)
+Each Card:
+Icon (top)
+Title (bold)
+No paragraph (keep crisp)
+Content:
+Confidence in self-expression
+Emotional strength & awareness
+Focus & calmness
+Inner stability & resilience
+Icon: 
+for each bullet point in content use the respective icons in the same order
+
+
+
+
+
+
+
+[SECTION 4: EXPERIENCE GRID]
+Layout Type: Grid (3 columns desktop / 2 tablet / 1 mobile)
+Card Style: Image top + text below
+
+Each Card Structure:
+Image (1:1 ratio)
+H3 Title
+Short description (1–2 lines)
+
+Cards:
+Warrior Movement (Kalaripayattu)
+
+Builds strength, discipline, body awareness
+Mindful Yoga & Breathwork
+
+Improves focus and emotional balance
+Emotional Expression Theatre
+
+Helps children express through storytelling
+Sound Healing Experience
+
+Calms mind and restores balance
+Confidence & Decision Lab
+
+Builds decision-making and self-trust
+Sensory Art Expression
+
+Encourages emotional release through creativity
+
+[SECTION 5: OUTCOMES]
+Layout Type: Full-width highlight section
+
+Content:
+H2: What Your Child Will Walk Away With
+Bullet List (with icons):
+Express themselves with confidence
+Handle emotions better
+Stronger focus and calmer mind
+Feel grounded and inwardly strong
+
+[SECTION 6: WHO IS THIS FOR]
+Layout Type: Centered narrow container
+Content:
+H2: Who Is This For
+Bullet List:
+Struggle with confidence or expression
+Easily distracted or anxious
+Need emotional grounding
+Want deeper growth beyond academics
+
+[SECTION 7: WHY THIS CAMP IS DIFFERENT]
+Layout Type: 2-column (text + image)
+Left (Text):
+H2: Why This Camp Is Different
+Content:
+This is not about keeping children busy.
+It’s about helping them discover who they are.
+Every activity is designed with purpose—blending ancient wisdom, modern psychology, and experiential learning.
+
+Right (Image):
+
+[SECTION 8: FINAL CTA]
+Layout Type: Centered, 
+Content:
+H2: Give your child something that stays for life
+Subtext:
+Not just skills. Not just activities.
+A stronger, more aware human being.
+CTA Button (Primary):
+Enquire Now (Link to whatsapp button 6363606088)

@@ -1,0 +1,129 @@
+Tarot Card Reading Content
+
+[SECTION 1: HERO]
+Layout: Full-width banner
+Height: 90–100vh
+Alignment: Center-left (desktop) / center (mobile)
+
+Content:
+H1: Tarot Card Reading
+H2: Clarity when your mind feels scattered. Direction when your heart feels unsure.
+Paragraph:
+At Tattvam Niramaya, tarot is not about predicting a fixed future.
+It is a tool for self-awareness, emotional clarity, and conscious decision-making.
+Highlight Line (accent style):
+You don’t come here to be told what will happen.
+You come here to understand what is happening within you.
+
+CTA:
+Primary Button: Book Your Session(555/-)
+Secondary (optional): WhatsApp Enquiry
+
+Hero Image
+
+
+
+SECTION 2: WHAT YOU WILL GAIN
+Layout: 2-column (text + visual)
+
+Left (Text):
+H2: What You Will Gain
+Bullet Points (with icons):
+Clarity in confusing situations
+Emotional insight and awareness
+Guidance for decision-making
+Stronger connection with your intuition
+Grounded perspective on your current phase
+
+Right (Image):
+
+
+Icons in the respective order as above:
+
+
+
+
+
+
+
+
+[SECTION 3: WHAT WE CAN EXPLORE]
+Layout: Grid (2 columns desktop / 1 mobile)
+Card Style: Minimal cards with icon + title + short text
+
+Cards:
+1. Life Direction & Decision Clarity
+Gain perspective on your path and available choices
+2. Relationships & Emotional Patterns
+Understand dynamics and recurring patterns
+3. Career & Financial Guidance
+Clarity on opportunities, blocks, and alignment
+4. Inner Blockages & Energy Shifts
+Identify fears and limiting beliefs
+5. Spiritual Growth & Self-Connection
+Reconnect with your inner voice
+Icons:
+
+
+
+
+
+
+[SECTION 4: HOW THE SESSION WORKS]
+Layout: Horizontal steps (or vertical on mobile)
+
+Steps:
+One-on-one guided tarot reading
+Safe, non-judgmental space
+Intuitive + grounded interpretation
+Practical, actionable insights
+Supporting Image
+
+
+
+[SECTION 5: OUTCOME OF A SESSION]
+Layout: Highlight section (soft background)
+
+Content:
+H2: What You Will Walk Away With
+Bullets:
+Feel clearer and more centered
+Understand your situation deeply
+Make decisions with confidence
+Recognize patterns influencing your life
+Leave with actionable clarity
+
+[SECTION 6: WHO IS THIS FOR]
+Layout: Centered narrow container
+
+Content:
+H2: Who Is This For
+Bullets:
+Feeling stuck or emotionally overwhelmed
+Facing an important decision
+Seeking clarity in relationships or career
+Want deeper self-understanding
+Ready to look within
+
+[SECTION 7: IMPORTANT NOTE (TRUST BUILDER)]
+Layout: Minimal, centered
+
+Content:
+H2: Important Note
+Tarot is a guidance tool—not a fixed prediction.
+Your choices, awareness, and actions shape your life.
+We use tarot to empower you—not create dependency.
+
+🔷 [SECTION 8: FINAL CTA]
+Layout: Centered, high emphasis
+
+Content:
+H2:
+Clarity begins when you choose to look within
+Subtext:
+Your answers are not outside.
+They are waiting to be seen.
+
+CTA:
+Primary Button: Book Your Session – ₹555
+Secondary: WhatsApp Enquiry

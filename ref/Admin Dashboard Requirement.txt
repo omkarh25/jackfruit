@@ -1,0 +1,154 @@
+Tattvam Niramaya — Admin Panel Requirements
+1. Dashboard (Overview)
+Purpose: Quick snapshot of business performance
+Widgets to include:
+Total Revenue (Daily / Weekly / Monthly) 
+Total Enrollments (Courses + Workshops) 
+Active 1:1 Clients 
+Upcoming Sessions (Workshops + Consultations) 
+Conversion Rate (Visitors → Bookings) 
+Recent Transactions 
+Alerts (low bookings, failed payments, etc.) 
+
+2. Workshops Management
+Admin should be able to:
+Add new workshop 
+Edit existing workshop 
+Delete / Archive workshop 
+Set: 
+Title 
+Description 
+Duration 
+Date & Time 
+Price 
+Max participants 
+Location (Online / Offline) 
+Upload images / banner 
+Enable/disable registrations 
+View participant list 
+Export attendee data (CSV/Excel) 
+Add/update coupon codes to claim discount
+After payment confirmation whatsapp redirect link (edited using the admin dashboard where I can put in the link before publishing the workshop)
+
+3. Services Management (Core Offering)
+For your wellness services
+Capabilities:
+Add / Edit / Delete services 
+Service details: 
+Title 
+Description (simple, user-friendly) 
+Duration 
+Price 
+Category (Healing / Coaching / Therapy) 
+Add packages (e.g., 3-session bundle) 
+Toggle service visibility (publish/unpublish) 
+Assign practitioner (if scaling later) 
+
+4. 1:1 Consultation Management
+Booking + scheduling system
+Features:
+View all bookings (calendar + list view) 
+Approve / Reschedule / Cancel sessions 
+Time slot management (availability settings) 
+Client details: 
+Name 
+Contact 
+Notes / intake form responses 
+Session status: 
+Upcoming / Completed / Cancelled 
+Add internal notes per client (important for coaching continuity) 
+
+5. Courses Management (Digital Programs)
+Admin can:
+Create course 
+Add modules & lessons 
+Upload: 
+Videos 
+PDFs 
+Audio (for meditations) 
+Set pricing (one-time / subscription) 
+Track: 
+Enrollments 
+Completion rates 
+Drip content control (release modules over time) 
+
+6. Payments & Revenue Tracking
+Financial visibility
+Features:
+View all transactions 
+Filter by: 
+Service / Workshop / Course 
+Date range 
+Metrics: 
+Total revenue 
+Revenue per offering 
+Pending payments 
+Download reports (monthly accounting) 
+Payment status: 
+ Failed / Refunded 
+
+7. User Management
+Manage all users
+Capabilities:
+View all users (clients) 
+Filter: 
+Active / Inactive 
+Course enrolled / Service taken 
+Edit basic details 
+View history: 
+Bookings 
+Purchases 
+Tag users (e.g., “High Intent”, “Repeat Client”) 
+
+
+8. Content Management (CMS Lite)
+To avoid dependency on developer
+Admin should edit:
+Homepage sections 
+Service descriptions 
+Workshop banners 
+Testimonials 
+FAQs 
+
+9. Testimonials & Reviews
+Social proof system
+Features:
+Add / Edit / Delete testimonials 
+Approve user-submitted reviews 
+Highlight featured testimonials on homepage 
+
+10. Notifications System
+Automation layer
+Include:
+Email/SMS triggers for: 
+Booking confirmation 
+Payment success 
+Session reminders 
+Admin alerts: 
+New booking 
+Cancellation 
+
+11. Offers, Coupons & Promotions
+Growth lever
+Features:
+Create discount codes 
+Set: 
+% or flat discount 
+Expiry date 
+Usage limit 
+Apply to specific services/workshops 
+
+12. Media Library
+Central asset management
+Admin can:
+Upload images/videos 
+Reuse across services/workshops/pages 
+Organize by folders 
+
+13. Security & Access Control
+Admin login authentication 
+Role-based access: 
+Super Admin 
+Manager (limited access) 
+Data backup 
+Activity logs (who changed what)

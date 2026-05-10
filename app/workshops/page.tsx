@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { PageShell } from "@/components/app-shell/page-shell";
 import { ContentCard } from "@/components/cards/content-card";
 import { workshops } from "@/lib/data";
@@ -18,9 +19,23 @@ export default function WorkshopsPage() {
             badge={workshop.format}
             meta={workshop.date}
           >
-            <button className="rounded-full bg-jackfruit-leaf px-5 py-3 text-sm font-semibold text-white transition hover:bg-jackfruit-deep">
-              {workshop.format === "Live Zoom" ? "View Zoom details" : "Watch recording"}
-            </button>
+            <div className="flex flex-wrap gap-3">
+              <Link
+                href={`/workshops/${workshop.slug}`}
+                className="rounded-full bg-tattvam-purple-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-tattvam-purple-700"
+              >
+                Click to Know More
+              </Link>
+              {workshop.format === "Live Zoom" ? (
+                <span className="inline-flex items-center rounded-full bg-tattvam-gold-100 px-4 py-2 text-xs font-bold text-tattvam-gold-700">
+                  ● Live
+                </span>
+              ) : (
+                <span className="inline-flex items-center rounded-full bg-tattvam-purple-100 px-4 py-2 text-xs font-bold text-tattvam-purple-600">
+                  ▶ Recording
+                </span>
+              )}
+            </div>
           </ContentCard>
         ))}
       </div>

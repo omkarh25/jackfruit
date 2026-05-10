@@ -30,6 +30,34 @@ export const feedItems: readonly FeedItem[] = [
 export const services: readonly ServiceOffering[] = [
   {
     id: "service-1",
+    slug: "project-ananda",
+    title: "Project Ananda",
+    description: "A structured wellness journey designed to bring your Body, Mind, and Emotions into balance — through movement, healing, awareness, and guided growth.",
+    duration: "Ongoing program",
+    price: "Contact for pricing",
+    outcomes: ["3-Step Diagnosis System", "Personalized guidance", "Body-Mind-Emotion alignment"]
+  },
+  {
+    id: "service-2",
+    slug: "inner-power-camp",
+    title: "Inner Power Camp for Kids",
+    description: "A holistic experience designed to build confidence, emotional strength, and focus in children—through movement, mindfulness, creativity, and expression.",
+    duration: "Camp program",
+    price: "Contact for pricing",
+    outcomes: ["Confidence building", "Emotional strength", "Focus & calmness"]
+  },
+  {
+    id: "service-3",
+    slug: "tarot-card-reading",
+    title: "Tarot Card Reading",
+    description: "A tool for self-awareness, emotional clarity, and conscious decision-making. Not about predicting a fixed future — about understanding what is happening within you.",
+    duration: "60 min",
+    price: "₹555",
+    outcomes: ["Clarity in confusing situations", "Emotional insight", "Guidance for decision-making"]
+  },
+  {
+    id: "service-4",
+    slug: "personal-consultation",
     title: "Personal Wellness Consultation",
     description: "A focused 1:1 consultation to understand your lifestyle, goals, and wellness blockers.",
     duration: "60 min",
@@ -37,7 +65,8 @@ export const services: readonly ServiceOffering[] = [
     outcomes: ["Lifestyle assessment", "Personal next steps", "Follow-up recommendations"]
   },
   {
-    id: "service-2",
+    id: "service-5",
+    slug: "breathwork-reset",
     title: "Breathwork Reset Package",
     description: "A guided package for building a consistent breathwork and nervous-system reset practice.",
     duration: "3 sessions",
@@ -49,17 +78,36 @@ export const services: readonly ServiceOffering[] = [
 export const workshops: readonly Workshop[] = [
   {
     id: "workshop-1",
+    slug: "sleep-better-with-breath",
     title: "Sleep Better with Breath",
     date: "30 Apr, 7:00 PM",
     format: "Live Zoom",
-    description: "A practical live workshop with breathing sequences for better sleep quality."
+    description: "A practical live workshop with breathing sequences for better sleep quality.",
+    longDescription: "Join us for a transformative live session where you'll learn ancient pranayama techniques combined with modern sleep science. Discover how conscious breathing can reset your nervous system, calm your mind, and prepare your body for deep, restorative sleep.",
+    price: "₹999",
+    whatsappLink: "https://wa.me/916363606088"
   },
   {
     id: "workshop-2",
+    slug: "digestive-fire-basics",
     title: "Digestive Fire Basics",
     date: "Recording available",
     format: "Recording",
-    description: "Watch the previous session on agni, food timing, and simple habit corrections."
+    description: "Watch the previous session on agni, food timing, and simple habit corrections.",
+    longDescription: "Understand the Ayurvedic concept of Agni (digestive fire) and learn practical, everyday habits to strengthen your digestion. Covers food combinations, eating times, and lifestyle tweaks for optimal gut health.",
+    price: "₹499",
+    whatsappLink: "https://wa.me/916363606088"
+  },
+  {
+    id: "workshop-3",
+    slug: "emotional-release-circle",
+    title: "Emotional Release Circle",
+    date: "15 May, 6:00 PM",
+    format: "Live Zoom",
+    description: "A safe group space to release stored emotions through movement and breath.",
+    longDescription: "A guided group healing session designed to help you release emotional blockages in a safe, supportive environment. Using somatic movement, breathwork, and energy practices, you'll create space for clarity and renewal.",
+    price: "₹1,299",
+    whatsappLink: "https://wa.me/916363606088"
   }
 ];
 
@@ -109,6 +157,13 @@ export const courses: readonly Course[] = [
  */
 export function getCourseBySlug(slug: string): Course | undefined {
   return courses.find((course) => course.slug === slug);
+}
+
+/**
+ * Finds a workshop by route slug.
+ */
+export function getWorkshopBySlug(slug: string): Workshop | undefined {
+  return workshops.find((workshop) => workshop.slug === slug);
 }
 
 export const bookingSlots: readonly BookingSlot[] = [

@@ -1,0 +1,23 @@
+Workshop Page Sample Object and Flow
+Sample Card for overview:
+
+current design is good lets keep it that way for workshop overview with each card looking like the above one but also adding a button on the bottom right called click to know more.
+
+Workshop Page sample:
+Similar to service page sample
+Section 1:
+<Header>
+<image>
+<Short Tagline>
+<content>
+<CTA>
+
+Section 2:
+(And so on..)
+
+
+Workshop Page Flow
+First the user lets say selects one workshop they click the button click to know more after that they are taken to another page which shows the service in detail with images and all the user needs to know including prices. 
+In the detailed workshop page they click on the cta (Choose available slot)
+Then they are taken to the slot selection page where they choose the slot and then make the payment. 
+After the payment they are redirected to the whatsapp group which is set using the admin dashboard

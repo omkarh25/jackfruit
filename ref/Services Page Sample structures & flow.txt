@@ -1,0 +1,37 @@
+Services Page Content & Flow
+
+Services overview Sample:
+<Title>
+<short description>
+<Outcomes>
+CTA: <Click to know more>(Button takes it to another webpage where the service is listed in detail lets call this service page)
+
+Service Page Sample:
+Section 1:
+<Header>
+<image>
+<Short Tagline>
+<content>
+<CTA>
+
+Section 2:
+(And so on..)
+
+
+
+
+
+
+
+Services Page Flow
+First the user lets say selects one service they click the button click to know more after that they are taken to another page which shows the service in detail with images and all the user needs to know including prices. 
+In the detailed service page they click on the cta (Choose available slot)
+Then they are taken to the slot selection page where they choose the slot and then make the payment. 
+
+
+
+
+
+
+
+
