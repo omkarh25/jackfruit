@@ -554,7 +554,13 @@ export default function HomePage() {
           
           <div className="mt-8 flex flex-col items-center justify-between gap-4 text-center text-sm text-tattvam-purple-500 md:flex-row">
             <p>© 2026 Tattvam Niramaya. All rights reserved.</p>
-            <p>Made with ✧ for healing</p>
+            <div className="flex items-center gap-4">
+              <Link href="/privacy-policy" className="transition hover:text-tattvam-purple-700">
+                Privacy Policy
+              </Link>
+              <span className="text-tattvam-purple-300">·</span>
+              <p>Made with ✧ for healing</p>
+            </div>
           </div>
         </div>
       </footer>
