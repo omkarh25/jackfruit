@@ -5,7 +5,7 @@ import { Navigation } from "@/components/app-shell/navigation";
 import { RazorpayPaymentButton } from "@/components/payments/razorpay-payment-button";
 
 const WHATSAPP_LINK = "https://wa.me/916363606088";
-const TAROT_PAYMENT_BUTTON_ID = "pl_SiNXqS3vOzGc7l"; // Reuse existing or create specific
+const TAROT_PAYMENT_BUTTON_ID = "pl_SoNO4oJ81Hr0Mn"; // Reuse existing or create specific
 
 const exploreCards = [
   {

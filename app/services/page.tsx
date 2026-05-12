@@ -8,7 +8,7 @@ import { RazorpayPaymentButton } from "@/components/payments/razorpay-payment-bu
 import { getVisibleServices, type ServiceRecord } from "@/lib/db/services";
 import { services as staticServices } from "@/lib/data";
 
-const paymentButtonId = "pl_SiNXqS3vOzGc7l";
+const paymentButtonId = "pl_SoNO4oJ81Hr0Mn";
 
 export default function ServicesPage() {
   const [services, setServices] = useState<ServiceRecord[]>([]);
