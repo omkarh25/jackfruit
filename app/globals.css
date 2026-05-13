@@ -224,3 +224,142 @@ html {
   opacity: 0.03;
   pointer-events: none;
 }
+
+/* ═══════════════════════════════════════════
+   PULSATING AURA EFFECTS
+   ═══════════════════════════════════════════ */
+
+@keyframes auraPulse {
+  0%, 100% {
+    box-shadow: var(--aura-shadow-dim);
+  }
+  50% {
+    box-shadow: var(--aura-shadow);
+  }
+}
+
+.aura-pulse-slow {
+  animation: auraPulse 4s ease-in-out infinite;
+}
+
+.aura-pulse-medium {
+  animation: auraPulse 2.5s ease-in-out infinite;
+}
+
+.aura-pulse-fast {
+  animation: auraPulse 1.5s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════
+   TRAVELING LOGO
+   ═══════════════════════════════════════════ */
+
+.traveling-logo:hover .traveling-logo-tooltip {
+  opacity: 1;
+}
+
+/* ═══════════════════════════════════════════
+   ENERGY PARTICLE CANVAS
+   ═══════════════════════════════════════════ */
+
+.energy-particles-canvas {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* ═══════════════════════════════════════════
+   SCROLL-DRIVEN 3D CARD REVEALS
+   ═══════════════════════════════════════════ */
+
+.card-3d-reveal {
+  perspective: 1000px;
+  transform-style: preserve-3d;
+}
+
+/* ═══════════════════════════════════════════
+   STAT COUNTER SHIMMER (post-animation)
+   ═══════════════════════════════════════════ */
+
+@keyframes statGlow {
+  0%, 100% {
+    text-shadow: 0 0 10px rgba(212, 175, 55, 0.2);
+  }
+  50% {
+    text-shadow: 0 0 25px rgba(212, 175, 55, 0.5), 0 0 50px rgba(212, 175, 55, 0.2);
+  }
+}
+
+.stat-glow {
+  animation: statGlow 3s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════
+   FLOATING TESTIMONIAL CARDS
+   ═══════════════════════════════════════════ */
+
+@keyframes testimonialFloat {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+
+.testimonial-float {
+  animation: testimonialFloat 6s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════
+   CHECKMARK DRAW ANIMATION
+   ═══════════════════════════════════════════ */
+
+@keyframes checkDraw {
+  0% {
+    clip-path: inset(0 100% 0 0);
+  }
+  100% {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.check-draw {
+  animation: checkDraw 0.4s ease-out forwards;
+}
+
+/* ═══════════════════════════════════════════
+   NAVIGATION SCROLL BEHAVIOR
+   ═══════════════════════════════════════════ */
+
+.nav-hidden {
+  transform: translateY(-100%);
+}
+
+.nav-visible {
+  transform: translateY(0);
+}
+
+/* ═══════════════════════════════════════════
+   HERO LOAD SEQUENCE BASE STATES
+   ═══════════════════════════════════════════ */
+
+.hero-load-item {
+  opacity: 0;
+}
+
+/* Reduced motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .aura-pulse-slow,
+  .aura-pulse-medium,
+  .aura-pulse-fast,
+  .stat-glow,
+  .testimonial-float {
+    animation: none !important;
+  }
+  
+  .hero-load-item {
+    opacity: 1;
+  }
+}
