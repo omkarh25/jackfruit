@@ -18,21 +18,15 @@ export function Navigation() {
   return (
     <header className="sticky top-0 z-10 border-b border-tattvam-purple-100 bg-tattvam-neutral-50/90 backdrop-blur">
       <nav className="mx-auto flex max-w-6xl flex-col gap-4 px-5 py-4 md:flex-row md:items-center md:justify-between">
-        <Link href="/" className="flex items-center gap-3 font-semibold text-tattvam-purple-700">
-          <div className="relative h-10 w-10">
+        <Link href="/" className="flex items-center font-semibold text-tattvam-purple-700">
+          <div className="relative h-16 w-52">
             <Image
               src="/assets/homepage/logo.png"
               alt="Tattvam Niramaya"
               fill
-              className="object-contain"
+              className="object-cover"
             />
           </div>
-          <span className="font-serif">
-            Tattvam Niramaya
-            <span className="block text-xs font-medium tracking-[0.1em] text-tattvam-purple-400">
-              Academy of Healers
-            </span>
-          </span>
         </Link>
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex flex-wrap gap-2">

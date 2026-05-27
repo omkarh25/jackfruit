@@ -341,19 +341,16 @@ export default function HomePage() {
         className="fixed top-0 left-0 right-0 z-50 glass-card transition-transform duration-300 nav-visible"
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="relative h-12 w-12">
+          <Link href="/" className="flex items-center">
+            <div className="relative h-20 w-60">
               <Image
                 src="/assets/homepage/logo.png"
                 alt="Tattvam Niramaya Logo"
                 fill
-                className="object-contain"
+                className="object-cover"
                 priority
               />
             </div>
-            <span className="font-serif text-xl font-semibold text-tattvam-purple-700">
-              Tattvam Niramaya
-            </span>
           </Link>
           <div className="flex items-center gap-6">
             <Link
@@ -941,18 +938,15 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl px-6">
           <div className="grid gap-8 md:grid-cols-4">
             <div>
-              <div className="flex items-center gap-3">
-                <div className="relative h-10 w-10">
+              <div className="flex items-center">
+                <div className="relative h-14 w-48">
                   <Image
                     src="/assets/homepage/logo.png"
                     alt="Tattvam Niramaya"
                     fill
-                    className="object-contain"
+                    className="object-cover"
                   />
                 </div>
-                <span className="font-serif text-lg font-semibold text-tattvam-purple-700">
-                  Tattvam Niramaya
-                </span>
               </div>
               <p className="mt-4 text-sm text-tattvam-purple-600/70">
                 The Truth That Heals. A sanctuary for holistic healing and
