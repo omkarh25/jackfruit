@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { FloatingOrbs, Reveal } from "@/components/animations";
 import { Navigation } from "@/components/app-shell/navigation";
 
@@ -7,19 +8,19 @@ const WHATSAPP_LINK = "https://wa.me/916363606088";
 
 const campFeatures = [
   {
-    icon: "🎯",
+    icon: "/assets/inner-power-camp/img3.png",
     title: "Confidence in self-expression",
   },
   {
-    icon: "❤️",
+    icon: "/assets/inner-power-camp/img4.png",
     title: "Emotional strength & awareness",
   },
   {
-    icon: "🧘",
+    icon: "/assets/inner-power-camp/img5.png",
     title: "Focus & calmness",
   },
   {
-    icon: "🌳",
+    icon: "/assets/inner-power-camp/img6.png",
     title: "Inner stability & resilience",
   },
 ];
@@ -28,32 +29,32 @@ const experiences = [
   {
     title: "Warrior Movement (Kalaripayattu)",
     description: "Builds strength, discipline, body awareness",
-    gradient: "from-amber-200 to-orange-100",
+    image: "/assets/inner-power-camp/img7.jpg",
   },
   {
     title: "Mindful Yoga & Breathwork",
     description: "Improves focus and emotional balance",
-    gradient: "from-emerald-200 to-lime-100",
+    image: "/assets/inner-power-camp/img8.jpg",
   },
   {
     title: "Emotional Expression Theatre",
     description: "Helps children express through storytelling",
-    gradient: "from-rose-200 to-pink-100",
+    image: "/assets/inner-power-camp/img9.jpg",
   },
   {
     title: "Sound Healing Experience",
     description: "Calms mind and restores balance",
-    gradient: "from-sky-200 to-cyan-100",
+    image: "/assets/inner-power-camp/img10.jpg",
   },
   {
     title: "Confidence & Decision Lab",
     description: "Builds decision-making and self-trust",
-    gradient: "from-violet-200 to-purple-100",
+    image: "/assets/inner-power-camp/img11.jpg",
   },
   {
     title: "Sensory Art Expression",
     description: "Encourages emotional release through creativity",
-    gradient: "from-fuchsia-200 to-pink-100",
+    image: "/assets/inner-power-camp/img12.jpg",
   },
 ];
 
@@ -69,47 +70,63 @@ export default function InnerPowerCampPage() {
         <div className="absolute bottom-1/4 right-1/4 h-80 w-80 rounded-full bg-tattvam-purple-200/30 blur-3xl animate-float-slow" style={{ animationDelay: "2s" }} />
 
         <div className="relative z-10 mx-auto max-w-6xl">
-          <div className="mx-auto max-w-3xl text-center md:text-left md:mx-0">
-            <Reveal delay={100}>
-              <h1 className="font-serif text-5xl font-bold leading-tight tracking-tight text-tattvam-purple-900 md:text-7xl">
-                Inner Power <span className="gradient-text">Camp</span> for Kids
-              </h1>
-            </Reveal>
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            <div className="mx-auto max-w-3xl text-center md:text-left md:mx-0">
+              <Reveal delay={100}>
+                <h1 className="font-serif text-5xl font-bold leading-tight tracking-tight text-tattvam-purple-900 md:text-7xl">
+                  Inner Power <span className="gradient-text">Camp</span> for Kids
+                </h1>
+              </Reveal>
 
-            <Reveal delay={300}>
-              <h2 className="mt-6 font-serif text-2xl font-medium text-tattvam-purple-700 md:text-3xl">
-                Not just a summer camp — a foundation for life
-              </h2>
-            </Reveal>
+              <Reveal delay={300}>
+                <h2 className="mt-6 font-serif text-2xl font-medium text-tattvam-purple-700 md:text-3xl">
+                  Not just a summer camp — a foundation for life
+                </h2>
+              </Reveal>
 
-            <Reveal delay={500}>
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-tattvam-purple-600/80">
-                A holistic experience designed to build confidence, emotional strength, and focus in children—through movement, mindfulness, creativity, and expression.
-              </p>
-            </Reveal>
-
-            <Reveal delay={700}>
-              <div className="mt-8 max-w-xl rounded-2xl bg-gradient-to-r from-tattvam-gold-400/10 to-tattvam-purple-400/10 p-6">
-                <p className="font-serif text-lg text-tattvam-purple-800">
-                  This is not about keeping children busy.
+              <Reveal delay={500}>
+                <p className="mt-6 max-w-2xl text-lg leading-relaxed text-tattvam-purple-600/80">
+                  A holistic experience designed to build confidence, emotional strength, and focus in children—through movement, mindfulness, creativity, and expression.
                 </p>
-                <p className="mt-1 font-serif text-lg font-semibold text-tattvam-gold-600">
-                  This is about shaping who they become.
-                </p>
-              </div>
-            </Reveal>
+              </Reveal>
 
-            <Reveal delay={900}>
-              <div className="mt-10">
-                <a
-                  href={WHATSAPP_LINK}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-primary inline-flex"
-                >
-                  Enquire Now
-                  <span className="ml-2">→</span>
-                </a>
+              <Reveal delay={700}>
+                <div className="mt-8 max-w-xl rounded-2xl bg-gradient-to-r from-tattvam-gold-400/10 to-tattvam-purple-400/10 p-6">
+                  <p className="font-serif text-lg text-tattvam-purple-800">
+                    This is not about keeping children busy.
+                  </p>
+                  <p className="mt-1 font-serif text-lg font-semibold text-tattvam-gold-600">
+                    This is about shaping who they become.
+                  </p>
+                </div>
+              </Reveal>
+
+              <Reveal delay={900}>
+                <div className="mt-10">
+                  <a
+                    href={WHATSAPP_LINK}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-primary inline-flex"
+                  >
+                    Enquire Now
+                    <span className="ml-2">→</span>
+                  </a>
+                </div>
+              </Reveal>
+            </div>
+
+            <Reveal direction="right" delay={300}>
+              <div className="relative hidden lg:block">
+                <div className="glass-card aspect-[4/3] overflow-hidden rounded-[2rem]">
+                  <Image
+                    src="/assets/inner-power-camp/img1.jpg"
+                    alt="Inner Power Camp for Kids"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="absolute -bottom-4 -right-4 -z-10 h-full w-full rounded-[2rem] border-2 border-tattvam-gold-300/30" />
               </div>
             </Reveal>
           </div>
@@ -140,9 +157,12 @@ export default function InnerPowerCampPage() {
             <Reveal direction="right" delay={200}>
               <div className="relative">
                 <div className="glass-card aspect-[4/3] overflow-hidden rounded-[2rem]">
-                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-tattvam-purple-200 to-tattvam-gold-200">
-                    <span className="text-6xl">🌟</span>
-                  </div>
+                  <Image
+                    src="/assets/inner-power-camp/img2.jpg"
+                    alt="About Inner Power Camp"
+                    fill
+                    className="object-cover"
+                  />
                 </div>
                 <div className="absolute -bottom-4 -right-4 -z-10 h-full w-full rounded-[2rem] border-2 border-tattvam-gold-300/30" />
               </div>
@@ -169,7 +189,14 @@ export default function InnerPowerCampPage() {
             {campFeatures.map((feature, i) => (
               <Reveal key={feature.title} delay={i * 100}>
                 <div className="card-hover rounded-3xl bg-white p-8 text-center shadow-soft">
-                  <div className="mb-4 text-4xl">{feature.icon}</div>
+                  <div className="relative mx-auto mb-4 h-16 w-16">
+                    <Image
+                      src={feature.icon}
+                      alt={feature.title}
+                      fill
+                      className="object-contain"
+                    />
+                  </div>
                   <h3 className="font-serif text-lg font-semibold text-tattvam-purple-800">
                     {feature.title}
                   </h3>
@@ -198,8 +225,13 @@ export default function InnerPowerCampPage() {
             {experiences.map((exp, i) => (
               <Reveal key={exp.title} delay={i * 100}>
                 <div className="card-hover overflow-hidden rounded-3xl bg-white shadow-soft">
-                  <div className={`aspect-square bg-gradient-to-br ${exp.gradient} flex items-center justify-center`}>
-                    <span className="text-5xl">✦</span>
+                  <div className="relative aspect-square">
+                    <Image
+                      src={exp.image}
+                      alt={exp.title}
+                      fill
+                      className="object-cover"
+                    />
                   </div>
                   <div className="p-6">
                     <h3 className="font-serif text-xl font-semibold text-tattvam-purple-800">
@@ -317,9 +349,12 @@ export default function InnerPowerCampPage() {
             <Reveal direction="right" delay={200}>
               <div className="relative">
                 <div className="glass-card aspect-[4/3] overflow-hidden rounded-[2rem]">
-                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-tattvam-gold-200 to-tattvam-purple-200">
-                    <span className="text-6xl">🌈</span>
-                  </div>
+                  <Image
+                    src="/assets/inner-power-camp/img13.jpg"
+                    alt="Why This Camp Is Different"
+                    fill
+                    className="object-cover"
+                  />
                 </div>
                 <div className="absolute -bottom-4 -right-4 -z-10 h-full w-full rounded-[2rem] border-2 border-tattvam-purple-300/30" />
               </div>

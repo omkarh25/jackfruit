@@ -10,8 +10,7 @@ interface BackgroundMusicProps {
  * Subtle background music player for the landing page.
  *
  * Design philosophy:
- * - NEVER auto-plays (browsers block this; users hate it).
- * - Starts muted with a gentle invitation to play.
+ * - Music is on by default (browsers may still block until user interaction).
  * - Smooth fade in/out so music never jarringly starts/stops.
  * - Saves user preference in localStorage.
  * - Respects reduced-motion preference.
@@ -21,7 +20,7 @@ export function BackgroundMusic({
   src = "/audio/background-music.mp3",
 }: BackgroundMusicProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(true);
   const [isLoaded, setIsLoaded] = useState(false);
   const [hasInteracted, setHasInteracted] = useState(false);
   const fadeIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -38,26 +37,56 @@ export function BackgroundMusic({
 
     audioRef.current = audio;
 
-    // Check saved preference
-    try {
-      const saved = localStorage.getItem("tn-music-enabled");
-      const savedInteracted = localStorage.getItem("tn-music-interacted");
-      if (savedInteracted === "true") {
-        setHasInteracted(true);
-        if (saved === "true") {
-          // Don't auto-play; just mark as desired. User must click.
-          // Actually, if they previously enabled it, we can try.
-          audio.play().catch(() => {
-            // Autoplay blocked — user will need to click
-          });
+    // Attempt autoplay on mount (music on by default)
+    const attemptPlay = () => {
+      audio.play().then(() => {
+        fadeVolume(0.25);
+        setIsPlaying(true);
+        try {
+          localStorage.setItem("tn-music-enabled", "true");
+        } catch {
+          // ignore
         }
-      }
-    } catch {
-      // localStorage unavailable
+      }).catch(() => {
+        // Autoplay blocked — wait for first user interaction
+      });
+    };
+
+    // If already loaded, try immediately; otherwise wait for canplaythrough
+    if (audio.readyState >= 3) {
+      attemptPlay();
+    } else {
+      const handleCanPlayOnce = () => {
+        attemptPlay();
+        audio.removeEventListener("canplaythrough", handleCanPlayOnce);
+      };
+      audio.addEventListener("canplaythrough", handleCanPlayOnce);
     }
+
+    // Fallback: play on first user interaction if autoplay was blocked
+    const interactionHandler = () => {
+      if (audio.paused && isPlaying) {
+        audio.play().then(() => {
+          fadeVolume(0.25);
+          setHasInteracted(true);
+          try {
+            localStorage.setItem("tn-music-enabled", "true");
+            localStorage.setItem("tn-music-interacted", "true");
+          } catch {
+            // ignore
+          }
+        }).catch(() => {});
+      }
+      document.removeEventListener("click", interactionHandler);
+      document.removeEventListener("touchstart", interactionHandler);
+    };
+    document.addEventListener("click", interactionHandler);
+    document.addEventListener("touchstart", interactionHandler);
 
     return () => {
       audio.removeEventListener("canplaythrough", handleCanPlay);
+      document.removeEventListener("click", interactionHandler);
+      document.removeEventListener("touchstart", interactionHandler);
       audio.pause();
       audio.src = "";
       if (fadeIntervalRef.current) clearInterval(fadeIntervalRef.current);

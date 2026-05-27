@@ -23,13 +23,16 @@ export interface WorkshopRecord {
   description: string;
   longDescription?: string;
   date: string;
+  dates?: string[];
   format: "Live Zoom" | "Recording";
   price: number;
+  enquiryMode?: boolean;
   maxParticipants?: number;
   location?: "Online" | "Offline";
   imageUrl?: string;
   whatsappLink?: string;
   registrationsEnabled: boolean;
+  status?: "active" | "archived";
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }

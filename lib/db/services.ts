@@ -23,6 +23,9 @@ export interface ServiceRecord {
   description: string;
   duration: string;
   price: string;
+  date?: string;
+  dates?: string[];
+  enquiryMode?: boolean;
   category?: "Healing" | "Coaching" | "Therapy";
   outcomes: string[];
   isVisible: boolean;

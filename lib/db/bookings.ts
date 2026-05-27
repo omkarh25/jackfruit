@@ -27,6 +27,8 @@ export interface BookingRecord {
   clientPhone?: string;
   slotDate: string;
   slotTime: string;
+  duration?: string;
+  meetingLink?: string;
   status: "upcoming" | "completed" | "cancelled" | "no_show";
   intakeNotes?: string;
   internalNotes?: string;

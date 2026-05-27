@@ -1,11 +1,10 @@
 "use client";
 
+import Image from "next/image";
 import { FloatingOrbs, Reveal } from "@/components/animations";
 import { Navigation } from "@/components/app-shell/navigation";
-import { RazorpayPaymentButton } from "@/components/payments/razorpay-payment-button";
 
 const WHATSAPP_LINK = "https://wa.me/916363606088";
-const TAROT_PAYMENT_BUTTON_ID = "pl_SoNO4oJ81Hr0Mn"; // Reuse existing or create specific
 
 const exploreCards = [
   {
@@ -54,47 +53,69 @@ export default function TarotCardReadingPage() {
         <div className="absolute bottom-1/4 right-1/4 h-80 w-80 rounded-full bg-tattvam-purple-200/30 blur-3xl animate-float-slow" style={{ animationDelay: "2s" }} />
 
         <div className="relative z-10 mx-auto max-w-6xl">
-          <div className="mx-auto max-w-3xl text-center md:text-left md:mx-0">
-            <Reveal delay={100}>
-              <h1 className="font-serif text-5xl font-bold leading-tight tracking-tight text-tattvam-purple-900 md:text-7xl">
-                Tarot Card <span className="gradient-text">Reading</span>
-              </h1>
-            </Reveal>
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            <div className="mx-auto max-w-3xl text-center md:text-left md:mx-0">
+              <Reveal delay={100}>
+                <h1 className="font-serif text-5xl font-bold leading-tight tracking-tight text-tattvam-purple-900 md:text-7xl">
+                  Tarot Card <span className="gradient-text">Reading</span>
+                </h1>
+              </Reveal>
 
-            <Reveal delay={300}>
-              <h2 className="mt-6 font-serif text-2xl font-medium text-tattvam-purple-700 md:text-3xl">
-                Clarity when your mind feels scattered. Direction when your heart feels unsure.
-              </h2>
-            </Reveal>
+              <Reveal delay={300}>
+                <h2 className="mt-6 font-serif text-2xl font-medium text-tattvam-purple-700 md:text-3xl">
+                  Clarity when your mind feels scattered. Direction when your heart feels unsure.
+                </h2>
+              </Reveal>
 
-            <Reveal delay={500}>
-              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-tattvam-purple-600/80">
-                At Tattvam Niramaya, tarot is not about predicting a fixed future. It is a tool for self-awareness, emotional clarity, and conscious decision-making.
-              </p>
-            </Reveal>
-
-            <Reveal delay={700}>
-              <div className="mt-8 max-w-xl rounded-2xl bg-gradient-to-r from-tattvam-gold-400/10 to-tattvam-purple-400/10 p-6">
-                <p className="font-serif text-lg text-tattvam-purple-800">
-                  You don&apos;t come here to be told what will happen.
+              <Reveal delay={500}>
+                <p className="mt-6 max-w-2xl text-lg leading-relaxed text-tattvam-purple-600/80">
+                  At Tattvam Niramaya, tarot is not about predicting a fixed future. It is a tool for self-awareness, emotional clarity, and conscious decision-making.
                 </p>
-                <p className="mt-1 font-serif text-lg font-semibold text-tattvam-gold-600">
-                  You come here to understand what is happening within you.
-                </p>
-              </div>
-            </Reveal>
+              </Reveal>
 
-            <Reveal delay={900}>
-              <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row md:items-start">
-                <RazorpayPaymentButton paymentButtonId={TAROT_PAYMENT_BUTTON_ID} />
-                <a
-                  href={WHATSAPP_LINK}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn-secondary inline-flex"
-                >
-                  WhatsApp Enquiry
-                </a>
+              <Reveal delay={700}>
+                <div className="mt-8 max-w-xl rounded-2xl bg-gradient-to-r from-tattvam-gold-400/10 to-tattvam-purple-400/10 p-6">
+                  <p className="font-serif text-lg text-tattvam-purple-800">
+                    You don&apos;t come here to be told what will happen.
+                  </p>
+                  <p className="mt-1 font-serif text-lg font-semibold text-tattvam-gold-600">
+                    You come here to understand what is happening within you.
+                  </p>
+                </div>
+              </Reveal>
+
+              <Reveal delay={900}>
+                <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row md:items-start">
+                  <a
+                    href="/booking"
+                    className="btn-primary inline-flex"
+                  >
+                    Choose Available Slot
+                    <span className="ml-2">→</span>
+                  </a>
+                  <a
+                    href={WHATSAPP_LINK}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="btn-secondary inline-flex"
+                  >
+                    WhatsApp Enquiry
+                  </a>
+                </div>
+              </Reveal>
+            </div>
+
+            <Reveal direction="right" delay={300}>
+              <div className="relative hidden lg:block">
+                <div className="glass-card aspect-[4/3] overflow-hidden rounded-[2rem]">
+                  <Image
+                    src="/assets/tarot-card-reading/img1.jpg"
+                    alt="Tarot Card Reading"
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div className="absolute -bottom-4 -right-4 -z-10 h-full w-full rounded-[2rem] border-2 border-tattvam-gold-300/30" />
               </div>
             </Reveal>
           </div>
@@ -135,9 +156,12 @@ export default function TarotCardReadingPage() {
             <Reveal direction="right" delay={200}>
               <div className="relative">
                 <div className="glass-card aspect-[4/3] overflow-hidden rounded-[2rem]">
-                  <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-tattvam-purple-300 to-tattvam-gold-300">
-                    <span className="text-6xl">🔮</span>
-                  </div>
+                  <Image
+                    src="/assets/tarot-card-reading/img2.jpg"
+                    alt="What You Will Gain"
+                    fill
+                    className="object-cover"
+                  />
                 </div>
                 <div className="absolute -bottom-4 -right-4 -z-10 h-full w-full rounded-[2rem] border-2 border-tattvam-gold-300/30" />
               </div>
@@ -331,7 +355,13 @@ export default function TarotCardReadingPage() {
 
           <Reveal delay={400}>
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <RazorpayPaymentButton paymentButtonId={TAROT_PAYMENT_BUTTON_ID} />
+              <a
+                href="/booking"
+                className="btn-primary inline-flex"
+              >
+                Choose Available Slot
+                <span className="ml-2">→</span>
+              </a>
               <a
                 href={WHATSAPP_LINK}
                 target="_blank"
