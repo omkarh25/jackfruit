@@ -10,6 +10,7 @@
  * - courses      (docId = auto)
  * - testimonials (docId = auto)
  * - coupons      (docId = coupon code)
+ * - slots        (docId = auto)
  */
 
 export * from "./users";
@@ -20,3 +21,4 @@ export * from "./services";
 export * from "./courses";
 export * from "./testimonials";
 export * from "./coupons";
+export * from "./slots";

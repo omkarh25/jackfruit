@@ -35,9 +35,12 @@ export default function AdminWorkshopsPage() {
   const [form, setForm] = useState(emptyWorkshop);
   const [datesInput, setDatesInput] = useState("");
   const [search, setSearch] = useState("");
+  const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [view, setView] = useState<"active" | "archived">("active");
 
   useEffect(() => {
     loadWorkshops();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadWorkshops() {
@@ -47,9 +50,15 @@ export default function AdminWorkshopsPage() {
       setWorkshops(data);
     } catch (e) {
       console.error(e);
+      showMessage("Failed to load workshops. Please refresh.", "error");
     } finally {
       setIsLoading(false);
     }
+  }
+
+  function showMessage(text: string, type: "success" | "error") {
+    setMessage({ text, type });
+    setTimeout(() => setMessage(null), 4000);
   }
 
   function openAdd() {
@@ -81,7 +90,23 @@ export default function AdminWorkshopsPage() {
     setIsModalOpen(true);
   }
 
+  function validateForm(): string | null {
+    if (!form.title.trim()) return "Please enter the workshop name.";
+    if (!form.slug.trim()) return "Please enter the slug.";
+    if (!form.description.trim()) return "Please enter the description.";
+    if (!form.date.trim()) return "Date and start time are required.";
+    if (!form.enquiryMode && form.price <= 0) return "Please enter a valid price.";
+    if (!form.maxParticipants || form.maxParticipants <= 0) return "Please enter a valid capacity.";
+    if (!form.location) return "Please select a location.";
+    return null;
+  }
+
   async function handleSave() {
+    const error = validateForm();
+    if (error) {
+      showMessage(error, "error");
+      return;
+    }
     const data = {
       ...form,
       dates: datesInput
@@ -92,14 +117,16 @@ export default function AdminWorkshopsPage() {
     try {
       if (editingWorkshop?.id) {
         await updateWorkshop(editingWorkshop.id, data);
+        showMessage("Workshop updated successfully.", "success");
       } else {
         await createWorkshop(data);
+        showMessage("Workshop created successfully.", "success");
       }
       setIsModalOpen(false);
       await loadWorkshops();
     } catch (e) {
       console.error(e);
-      alert("Failed to save workshop. Please try again.");
+      showMessage("Failed to save workshop. Please try again.", "error");
     }
   }
 
@@ -107,39 +134,73 @@ export default function AdminWorkshopsPage() {
     if (!confirm("Are you sure you want to archive this workshop?")) return;
     try {
       await updateWorkshop(id, { status: "archived" });
+      showMessage("Workshop archived successfully.", "success");
       await loadWorkshops();
     } catch (e) {
       console.error(e);
-      alert("Failed to archive workshop.");
+      showMessage("Failed to archive workshop. Please try again.", "error");
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this workshop?")) return;
+    if (!confirm("Are you sure you want to permanently delete this workshop? This cannot be undone.")) return;
     try {
       await deleteWorkshop(id);
+      showMessage("Workshop deleted successfully.", "success");
       await loadWorkshops();
     } catch (e) {
       console.error(e);
-      alert("Failed to delete workshop.");
+      showMessage("Failed to delete workshop. Please try again.", "error");
     }
   }
 
-  const filteredWorkshops = workshops.filter((w) =>
-    w.title.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredWorkshops = workshops
+    .filter((w) => w.title.toLowerCase().includes(search.toLowerCase()))
+    .filter((w) => (view === "active" ? w.status !== "archived" : w.status === "archived"));
 
   return (
     <AdminShell title="Workshops Management" subtitle="Add, edit, and manage your workshops">
+      {/* Message Toast */}
+      {message && (
+        <div
+          className={`mb-4 rounded-xl px-5 py-3 text-sm font-medium ${
+            message.type === "success"
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+          }`}
+        >
+          {message.text}
+        </div>
+      )}
+
       {/* Actions Bar */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex gap-3">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-3">
           <button onClick={openAdd} className="btn-primary text-sm">
             ➕ Add New Workshop
           </button>
-          <button className="rounded-full border border-tattvam-purple-200 bg-white px-5 py-3 text-sm font-medium text-tattvam-purple-600 transition hover:bg-tattvam-purple-50">
-            📤 Export CSV
-          </button>
+          <div className="flex rounded-full border border-tattvam-purple-200 bg-white p-1">
+            <button
+              onClick={() => setView("active")}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                view === "active"
+                  ? "bg-tattvam-purple-100 text-tattvam-purple-700"
+                  : "text-tattvam-purple-500 hover:text-tattvam-purple-700"
+              }`}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => setView("archived")}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                view === "archived"
+                  ? "bg-tattvam-purple-100 text-tattvam-purple-700"
+                  : "text-tattvam-purple-500 hover:text-tattvam-purple-700"
+              }`}
+            >
+              Archived
+            </button>
+          </div>
         </div>
         <div className="flex gap-3">
           <input
@@ -158,12 +219,16 @@ export default function AdminWorkshopsPage() {
         </div>
       ) : filteredWorkshops.length === 0 ? (
         <div className="rounded-2xl bg-white p-12 text-center shadow-soft">
-          <p className="text-lg text-tattvam-purple-400">No workshops found.</p>
-          <p className="mt-2 text-sm text-tattvam-purple-400">Add workshops using the button above.</p>
+          <p className="text-lg text-tattvam-purple-400">
+            {view === "active" ? "No active workshops found." : "No archived workshops found."}
+          </p>
+          <p className="mt-2 text-sm text-tattvam-purple-400">
+            {view === "active" ? "Add workshops using the button above." : "Archived workshops will appear here."}
+          </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl bg-white shadow-soft">
-          <table className="w-full text-left">
+        <div className="overflow-x-auto rounded-2xl bg-white shadow-soft">
+          <table className="w-full min-w-[640px] text-left">
             <thead>
               <tr className="border-b border-tattvam-purple-100 bg-tattvam-purple-50">
                 <th className="px-6 py-4 text-sm font-semibold text-tattvam-purple-800">Title</th>
@@ -215,7 +280,7 @@ export default function AdminWorkshopsPage() {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => openEdit(workshop)}
                         className="rounded-lg bg-tattvam-purple-100 px-3 py-1.5 text-xs font-medium text-tattvam-purple-600 transition hover:bg-tattvam-purple-200"
@@ -255,7 +320,9 @@ export default function AdminWorkshopsPage() {
             </h2>
             <div className="mt-6 grid gap-4">
               <div>
-                <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Title</label>
+                <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
+                  Title <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   value={form.title}
@@ -264,7 +331,9 @@ export default function AdminWorkshopsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Slug</label>
+                <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
+                  Slug <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   value={form.slug}
@@ -273,7 +342,9 @@ export default function AdminWorkshopsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Description</label>
+                <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
+                  Description <span className="text-red-500">*</span>
+                </label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -281,9 +352,11 @@ export default function AdminWorkshopsPage() {
                   className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Primary Date</label>
+                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
+                    Primary Date <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={form.date}
@@ -293,7 +366,9 @@ export default function AdminWorkshopsPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Additional Dates (comma separated)</label>
+                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
+                    Additional Dates (comma separated)
+                  </label>
                   <input
                     type="text"
                     value={datesInput}
@@ -303,9 +378,11 @@ export default function AdminWorkshopsPage() {
                   />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Format</label>
+                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
+                    Format <span className="text-red-500">*</span>
+                  </label>
                   <select
                     value={form.format}
                     onChange={(e) => setForm({ ...form, format: e.target.value as WorkshopRecord["format"] })}
@@ -316,14 +393,16 @@ export default function AdminWorkshopsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Status</label>
+                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
+                    Location <span className="text-red-500">*</span>
+                  </label>
                   <select
-                    value={form.status}
-                    onChange={(e) => setForm({ ...form, status: e.target.value as WorkshopRecord["status"] })}
+                    value={form.location}
+                    onChange={(e) => setForm({ ...form, location: e.target.value as WorkshopRecord["location"] })}
                     className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
                   >
-                    <option value="active">Active</option>
-                    <option value="archived">Archived</option>
+                    <option value="Online">Online</option>
+                    <option value="Offline">Offline</option>
                   </select>
                 </div>
               </div>
@@ -341,7 +420,9 @@ export default function AdminWorkshopsPage() {
               </div>
               {!form.enquiryMode && (
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Price (₹)</label>
+                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
+                    Price (₹) <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="number"
                     value={form.price}
@@ -361,9 +442,11 @@ export default function AdminWorkshopsPage() {
                   />
                 </div>
               )}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Max Participants</label>
+                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
+                    Max Participants <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="number"
                     value={form.maxParticipants}
@@ -372,25 +455,15 @@ export default function AdminWorkshopsPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Location</label>
-                  <select
-                    value={form.location}
-                    onChange={(e) => setForm({ ...form, location: e.target.value as WorkshopRecord["location"] })}
+                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Meeting Link (if online)</label>
+                  <input
+                    type="text"
+                    value={form.whatsappLink || ""}
+                    onChange={(e) => setForm({ ...form, whatsappLink: e.target.value })}
+                    placeholder="e.g. https://zoom.us/j/..."
                     className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
-                  >
-                    <option value="Online">Online</option>
-                    <option value="Offline">Offline</option>
-                  </select>
+                  />
                 </div>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Image URL</label>
-                <input
-                  type="text"
-                  value={form.imageUrl}
-                  onChange={(e) => setForm({ ...form, imageUrl: e.target.value })}
-                  className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
-                />
               </div>
               <div className="flex items-center gap-3">
                 <input

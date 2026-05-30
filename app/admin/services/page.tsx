@@ -32,9 +32,12 @@ export default function AdminServicesPage() {
   const [datesInput, setDatesInput] = useState("");
   const [outcomesInput, setOutcomesInput] = useState("");
   const [search, setSearch] = useState("");
+  const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
+  const [view, setView] = useState<"active" | "archived">("active");
 
   useEffect(() => {
     loadServices();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadServices() {
@@ -44,9 +47,15 @@ export default function AdminServicesPage() {
       setServices(data);
     } catch (e) {
       console.error(e);
+      showMessage("Failed to load services. Please refresh.", "error");
     } finally {
       setIsLoading(false);
     }
+  }
+
+  function showMessage(text: string, type: "success" | "error") {
+    setMessage({ text, type });
+    setTimeout(() => setMessage(null), 4000);
   }
 
   function openAdd() {
@@ -76,7 +85,22 @@ export default function AdminServicesPage() {
     setIsModalOpen(true);
   }
 
+  function validateForm(): string | null {
+    if (!form.title.trim()) return "Please enter the service name.";
+    if (!form.slug.trim()) return "Please enter the slug.";
+    if (!form.description.trim()) return "Please enter the description.";
+    if (!form.duration.trim()) return "Please enter the duration.";
+    if (!form.enquiryMode && !form.price.trim()) return "Please enter a valid price.";
+    if (!form.category) return "Please select a category.";
+    return null;
+  }
+
   async function handleSave() {
+    const error = validateForm();
+    if (error) {
+      showMessage(error, "error");
+      return;
+    }
     const data = {
       ...form,
       dates: datesInput
@@ -91,50 +115,101 @@ export default function AdminServicesPage() {
     try {
       if (editingService?.id) {
         await updateService(editingService.id, data);
+        showMessage("Service updated successfully.", "success");
       } else {
         await createService(data);
+        showMessage("Service created successfully.", "success");
       }
       setIsModalOpen(false);
       await loadServices();
     } catch (e) {
       console.error(e);
-      alert("Failed to save service. Please try again.");
+      showMessage("Failed to save service. Please try again.", "error");
     }
   }
 
-  async function handleToggleVisibility(service: ServiceRecord) {
+  async function handleArchive(id: string) {
+    if (!confirm("Are you sure you want to archive this service?")) return;
     try {
-      await updateService(service.id!, { isVisible: !service.isVisible });
+      await updateService(id, { isVisible: false });
+      showMessage("Service archived successfully.", "success");
       await loadServices();
     } catch (e) {
       console.error(e);
-      alert("Failed to update visibility.");
+      showMessage("Failed to archive service. Please try again.", "error");
     }
   }
 
   async function handleDelete(id: string) {
-    if (!confirm("Are you sure you want to delete this service?")) return;
+    if (!confirm("Are you sure you want to permanently delete this service? This cannot be undone.")) return;
     try {
       await deleteService(id);
+      showMessage("Service deleted successfully.", "success");
       await loadServices();
     } catch (e) {
       console.error(e);
-      alert("Failed to delete service.");
+      showMessage("Failed to delete service. Please try again.", "error");
     }
   }
 
-  const filteredServices = services.filter((s) =>
-    s.title.toLowerCase().includes(search.toLowerCase())
-  );
+  async function handleRestore(id: string) {
+    try {
+      await updateService(id, { isVisible: true });
+      showMessage("Service restored successfully.", "success");
+      await loadServices();
+    } catch (e) {
+      console.error(e);
+      showMessage("Failed to restore service. Please try again.", "error");
+    }
+  }
+
+  const filteredServices = services
+    .filter((s) => s.title.toLowerCase().includes(search.toLowerCase()))
+    .filter((s) => (view === "active" ? s.isVisible : !s.isVisible));
 
   return (
     <AdminShell title="Services Management" subtitle="Manage your wellness services and offerings">
+      {/* Message Toast */}
+      {message && (
+        <div
+          className={`mb-4 rounded-xl px-5 py-3 text-sm font-medium ${
+            message.type === "success"
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+          }`}
+        >
+          {message.text}
+        </div>
+      )}
+
       {/* Actions Bar */}
-      <div className="mb-6 flex items-center justify-between">
-        <div className="flex gap-3">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-wrap items-center gap-3">
           <button onClick={openAdd} className="btn-primary text-sm">
             ➕ Add New Service
           </button>
+          <div className="flex rounded-full border border-tattvam-purple-200 bg-white p-1">
+            <button
+              onClick={() => setView("active")}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                view === "active"
+                  ? "bg-tattvam-purple-100 text-tattvam-purple-700"
+                  : "text-tattvam-purple-500 hover:text-tattvam-purple-700"
+              }`}
+            >
+              Active
+            </button>
+            <button
+              onClick={() => setView("archived")}
+              className={`rounded-full px-4 py-2 text-sm font-medium transition ${
+                view === "archived"
+                  ? "bg-tattvam-purple-100 text-tattvam-purple-700"
+                  : "text-tattvam-purple-500 hover:text-tattvam-purple-700"
+              }`}
+            >
+              Archived
+            </button>
+          </div>
         </div>
         <div className="flex gap-3">
           <input
@@ -153,19 +228,23 @@ export default function AdminServicesPage() {
         </div>
       ) : filteredServices.length === 0 ? (
         <div className="rounded-2xl bg-white p-12 text-center shadow-soft">
-          <p className="text-lg text-tattvam-purple-400">No services found.</p>
-          <p className="mt-2 text-sm text-tattvam-purple-400">Add services using the button above.</p>
+          <p className="text-lg text-tattvam-purple-400">
+            {view === "active" ? "No active services found." : "No archived services found."}
+          </p>
+          <p className="mt-2 text-sm text-tattvam-purple-400">
+            {view === "active" ? "Add services using the button above." : "Archived services will appear here."}
+          </p>
         </div>
       ) : (
-        <div className="overflow-hidden rounded-2xl bg-white shadow-soft">
-          <table className="w-full text-left">
+        <div className="overflow-x-auto rounded-2xl bg-white shadow-soft">
+          <table className="w-full min-w-[640px] text-left">
             <thead>
               <tr className="border-b border-tattvam-purple-100 bg-tattvam-purple-50">
                 <th className="px-6 py-4 text-sm font-semibold text-tattvam-purple-800">Title</th>
                 <th className="px-6 py-4 text-sm font-semibold text-tattvam-purple-800">Duration</th>
                 <th className="px-6 py-4 text-sm font-semibold text-tattvam-purple-800">Price</th>
                 <th className="px-6 py-4 text-sm font-semibold text-tattvam-purple-800">Category</th>
-                <th className="px-6 py-4 text-sm font-semibold text-tattvam-purple-800">Visibility</th>
+                <th className="px-6 py-4 text-sm font-semibold text-tattvam-purple-800">Status</th>
                 <th className="px-6 py-4 text-sm font-semibold text-tattvam-purple-800">Actions</th>
               </tr>
             </thead>
@@ -200,29 +279,40 @@ export default function AdminServicesPage() {
                           : "bg-gray-100 text-gray-600"
                       }`}
                     >
-                      {service.isVisible ? "Published" : "Hidden"}
+                      {service.isVisible ? "Published" : "Archived"}
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap gap-2">
                       <button
                         onClick={() => openEdit(service)}
                         className="rounded-lg bg-tattvam-purple-100 px-3 py-1.5 text-xs font-medium text-tattvam-purple-600 transition hover:bg-tattvam-purple-200"
                       >
                         Edit
                       </button>
-                      <button
-                        onClick={() => handleToggleVisibility(service)}
-                        className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
-                      >
-                        {service.isVisible ? "Hide" : "Show"}
-                      </button>
-                      <button
-                        onClick={() => handleDelete(service.id!)}
-                        className="rounded-lg bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-100"
-                      >
-                        Delete
-                      </button>
+                      {service.isVisible ? (
+                        <button
+                          onClick={() => handleArchive(service.id!)}
+                          className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                        >
+                          Archive
+                        </button>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => handleRestore(service.id!)}
+                            className="rounded-lg bg-green-50 px-3 py-1.5 text-xs font-medium text-green-600 transition hover:bg-green-100"
+                          >
+                            Restore
+                          </button>
+                          <button
+                            onClick={() => handleDelete(service.id!)}
+                            className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                          >
+                            Delete
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -241,7 +331,9 @@ export default function AdminServicesPage() {
             </h2>
             <div className="mt-6 grid gap-4">
               <div>
-                <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Title</label>
+                <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
+                  Title <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   value={form.title}
@@ -250,7 +342,9 @@ export default function AdminServicesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Slug</label>
+                <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
+                  Slug <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   value={form.slug}
@@ -259,7 +353,9 @@ export default function AdminServicesPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Description</label>
+                <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
+                  Description <span className="text-red-500">*</span>
+                </label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -267,9 +363,11 @@ export default function AdminServicesPage() {
                   className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
                 />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Duration</label>
+                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
+                    Duration <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={form.duration}
@@ -279,7 +377,9 @@ export default function AdminServicesPage() {
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Category</label>
+                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
+                    Category <span className="text-red-500">*</span>
+                  </label>
                   <select
                     value={form.category}
                     onChange={(e) => setForm({ ...form, category: e.target.value as ServiceRecord["category"] })}
@@ -291,7 +391,7 @@ export default function AdminServicesPage() {
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Primary Date</label>
                   <input
@@ -327,7 +427,9 @@ export default function AdminServicesPage() {
               </div>
               {!form.enquiryMode && (
                 <div>
-                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Price</label>
+                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
+                    Price <span className="text-red-500">*</span>
+                  </label>
                   <input
                     type="text"
                     value={form.price}

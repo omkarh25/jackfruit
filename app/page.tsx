@@ -342,7 +342,7 @@ export default function HomePage() {
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link href="/" className="flex items-center">
-            <div className="relative h-20 w-60">
+            <div className="relative h-12 w-36 sm:h-20 sm:w-60">
               <Image
                 src="/assets/homepage/logo.png"
                 alt="Tattvam Niramaya Logo"
@@ -352,7 +352,7 @@ export default function HomePage() {
               />
             </div>
           </Link>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-6">
             <Link
               href="#essence"
               className="hidden text-sm font-medium text-tattvam-purple-600 transition hover:text-tattvam-purple-800 md:block"
@@ -377,7 +377,7 @@ export default function HomePage() {
             >
               Stories
             </Link>
-            <Link href="/booking" className="btn-primary text-sm">
+            <Link href="/booking" className="btn-primary whitespace-nowrap px-4 py-2 text-xs sm:px-6 sm:py-3 sm:text-sm">
               Book Discovery Call
             </Link>
           </div>
@@ -422,7 +422,7 @@ export default function HomePage() {
             conscious awareness—we guide you back to your truth.
           </p>
 
-          <div className="hero-ctas mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+          <div className="hero-ctas relative z-10 mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
             <PulsatingAura color="gold" intensity="medium" speed="slow">
               <Link href="/booking" className="btn-primary">
                 Book Discovery Call

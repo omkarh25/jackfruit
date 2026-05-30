@@ -22,7 +22,7 @@ export interface FirestoreUserProfile {
   email: string;
   phone?: string;
   photoURL?: string;
-  role: "learner" | "admin";
+  role: "learner" | "admin" | "super_admin";
   tags?: string[];
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
@@ -75,10 +75,39 @@ export async function getAllUsers(): Promise<FirestoreUserProfile[]> {
   return snap.docs.map((d) => d.data() as FirestoreUserProfile);
 }
 
-export async function getUsersByRole(role: "learner" | "admin"): Promise<FirestoreUserProfile[]> {
+export async function getUsersByRole(role: "learner" | "admin" | "super_admin"): Promise<FirestoreUserProfile[]> {
   const q = query(collection(db, usersCollection), where("role", "==", role));
   const snap = await getDocs(q);
   return snap.docs.map((d) => d.data() as FirestoreUserProfile);
+}
+
+export async function getUserRegistrations(uid: string): Promise<{
+  bookings: { id: string; type: string; title: string; date: string; status: string }[];
+  payments: { id: string; itemType: string; itemTitle?: string; amount: number; status: string; createdAt?: string }[];
+}> {
+  const { getBookingsByUser } = await import("@/lib/db/bookings");
+  const { getPaymentsByUser } = await import("@/lib/db/payments");
+  const [bookings, payments] = await Promise.all([
+    getBookingsByUser(uid),
+    getPaymentsByUser(uid),
+  ]);
+  return {
+    bookings: bookings.map((b) => ({
+      id: b.id || "",
+      type: "1:1 Consultation",
+      title: b.serviceId || "Consultation",
+      date: `${b.slotDate} at ${b.slotTime}`,
+      status: b.status,
+    })),
+    payments: payments.map((p) => ({
+      id: p.id || "",
+      itemType: p.itemType,
+      itemTitle: p.itemTitle,
+      amount: p.amount,
+      status: p.status,
+      createdAt: p.createdAt?.toDate?.().toISOString(),
+    })),
+  };
 }
 
 export function toUserProfile(data: FirestoreUserProfile): UserProfile {
@@ -87,6 +116,7 @@ export function toUserProfile(data: FirestoreUserProfile): UserProfile {
     name: data.name,
     email: data.email,
     photoURL: data.photoURL,
+    role: data.role,
     purchasedCourseIds: [],
     bookingIds: [],
     createdAt: data.createdAt?.toDate?.().toISOString() ?? new Date().toISOString(),

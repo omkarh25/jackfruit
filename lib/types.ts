@@ -63,6 +63,7 @@ export interface UserProfile {
   readonly name: string;
   readonly email: string;
   readonly photoURL?: string;
+  readonly role?: "learner" | "admin" | "super_admin";
   readonly purchasedCourseIds: readonly string[];
   readonly bookingIds: readonly string[];
   readonly createdAt: string;

@@ -116,7 +116,7 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
     [profile]
   );
 
-  const isAdmin = profile?.uid ? false : false; // Will be set from Firestore role
+  const isAdmin = profile?.role === "admin" || profile?.role === "super_admin";
 
   const value = useMemo(
     () => ({ firebaseUser, profile, isLoading, isAdmin, loginWithGoogle, logout, unlockCourse }),
