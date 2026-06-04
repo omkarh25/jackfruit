@@ -1,21 +1,61 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { notFound } from "next/navigation";
 import { FloatingOrbs, Reveal } from "@/components/animations";
 import { Navigation } from "@/components/app-shell/navigation";
-import { RazorpayPaymentButton } from "@/components/payments/razorpay-payment-button";
-import { getWorkshopBySlug } from "@/lib/data";
-
-const paymentButtonId = "pl_SiNXqS3vOzGc7l";
+import { WorkshopPayButton } from "@/components/payments/workshop-pay-button";
+import { getWorkshopBySlug as getFirestoreWorkshopBySlug, type WorkshopRecord } from "@/lib/db/workshops";
+import { workshops as staticWorkshops } from "@/lib/data";
 
 export default function WorkshopDetailPage({ params }: { params: { slug: string } }) {
-  const workshop = getWorkshopBySlug(params.slug);
+  const [workshop, setWorkshop] = useState<WorkshopRecord | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    getFirestoreWorkshopBySlug(params.slug)
+      .then((data) => {
+        if (data) {
+          setWorkshop(data);
+        } else {
+          // Fallback to static workshops
+          const staticWs = staticWorkshops.find((w) => w.slug === params.slug);
+          if (staticWs) {
+            setWorkshop({
+              id: staticWs.id,
+              title: staticWs.title,
+              slug: staticWs.slug,
+              description: staticWs.description,
+              longDescription: staticWs.longDescription,
+              date: staticWs.date,
+              format: staticWs.format,
+              price: staticWs.price ? parseInt(staticWs.price.replace(/[^0-9]/g, "")) || 0 : 0,
+              whatsappLink: staticWs.whatsappLink,
+              registrationsEnabled: true,
+            });
+          }
+        }
+      })
+      .catch((err) => {
+        console.error("Error loading workshop details:", err);
+      })
+      .finally(() => setIsLoading(false));
+  }, [params.slug]);
+
+  if (isLoading) {
+    return (
+      <div className="relative min-h-screen bg-tattvam-neutral-50 flex items-center justify-center">
+        <div className="text-tattvam-purple-500 font-medium">Loading workshop details...</div>
+      </div>
+    );
+  }
 
   if (!workshop) {
     notFound();
   }
 
-  const isLive = workshop.format === "Live Zoom";
+  const isReservable = workshop.format === "Live Zoom" || workshop.format === "Offline";
+  const isOffline = workshop.format === "Offline";
 
   return (
     <div className="relative overflow-x-hidden bg-tattvam-neutral-50">
@@ -30,7 +70,7 @@ export default function WorkshopDetailPage({ params }: { params: { slug: string 
         <div className="relative z-10 mx-auto max-w-4xl text-center">
           <Reveal delay={100}>
             <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-tattvam-purple-50 px-4 py-2 text-sm font-medium text-tattvam-purple-600">
-              <span className={`h-2 w-2 rounded-full ${isLive ? "bg-green-400 animate-pulse" : "bg-tattvam-purple-400"}`} />
+              <span className={`h-2 w-2 rounded-full ${isReservable ? "bg-green-400 animate-pulse" : "bg-tattvam-purple-400"}`} />
               {workshop.format}
             </div>
           </Reveal>
@@ -48,7 +88,7 @@ export default function WorkshopDetailPage({ params }: { params: { slug: string 
           </Reveal>
 
           <Reveal delay={700}>
-            <div className="mx-auto mt-8 flex max-w-lg flex-wrap items-center justify-center gap-4 rounded-2xl bg-white p-6 shadow-soft">
+            <div className="mx-auto mt-8 flex max-w-2xl flex-wrap items-center justify-center gap-4 rounded-2xl bg-white p-6 shadow-soft">
               <div className="text-center">
                 <p className="text-xs font-medium uppercase tracking-wider text-tattvam-purple-400">Date</p>
                 <p className="mt-1 font-semibold text-tattvam-purple-800">{workshop.date}</p>
@@ -61,25 +101,61 @@ export default function WorkshopDetailPage({ params }: { params: { slug: string 
               <div className="h-8 w-px bg-tattvam-purple-100" />
               <div className="text-center">
                 <p className="text-xs font-medium uppercase tracking-wider text-tattvam-purple-400">Price</p>
-                <p className="mt-1 font-semibold text-tattvam-gold-600">{workshop.price || "Free"}</p>
+                <p className="mt-1 font-semibold text-tattvam-gold-600">
+                  {workshop.enquiryMode ? "Enquiry Only" : workshop.price > 0 ? `₹${workshop.price}` : "Free"}
+                </p>
               </div>
+              {isOffline && workshop.venueLink && (
+                <>
+                  <div className="h-8 w-px bg-tattvam-purple-100" />
+                  <div className="text-center">
+                    <p className="text-xs font-medium uppercase tracking-wider text-tattvam-purple-400">Venue</p>
+                    <a
+                      href={workshop.venueLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="mt-1 block font-semibold text-tattvam-purple-800 underline hover:text-tattvam-purple-600 transition"
+                    >
+                      View Map 📍
+                    </a>
+                  </div>
+                </>
+              )}
             </div>
           </Reveal>
 
           <Reveal delay={900}>
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              {isLive ? (
-                <>
-                  <RazorpayPaymentButton paymentButtonId={paymentButtonId} />
+              {isReservable ? (
+                workshop.enquiryMode ? (
                   <a
                     href={workshop.whatsappLink || "https://wa.me/916363606088"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn-secondary inline-flex"
+                    className="btn-primary inline-flex"
                   >
                     Enquire on WhatsApp
                   </a>
-                </>
+                ) : (
+                  <>
+                    <div className="w-full sm:w-auto">
+                      <WorkshopPayButton
+                        workshopId={workshop.id || workshop.slug}
+                        workshopTitle={workshop.title}
+                        price={workshop.price}
+                        redirectUrl={workshop.paymentRedirectUrl}
+                      />
+                    </div>
+                    <a
+                      href={workshop.whatsappLink || "https://wa.me/916363606088"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-secondary inline-flex"
+                    >
+                      Enquire on WhatsApp
+                    </a>
+                  </>
+                )
               ) : (
                 <button className="btn-primary inline-flex">
                   Watch Recording
@@ -132,7 +208,7 @@ export default function WorkshopDetailPage({ params }: { params: { slug: string 
 
           <Reveal delay={200}>
             <p className="mx-auto mt-6 max-w-xl text-lg text-purple-100/80">
-              {isLive
+              {isReservable
                 ? "Secure your spot today. Limited seats available for live sessions."
                 : "Get instant access to the full recording and start learning right away."}
             </p>
@@ -140,18 +216,36 @@ export default function WorkshopDetailPage({ params }: { params: { slug: string 
 
           <Reveal delay={400}>
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              {isLive ? (
-                <>
-                  <RazorpayPaymentButton paymentButtonId={paymentButtonId} />
+              {isReservable ? (
+                workshop.enquiryMode ? (
                   <a
                     href={workshop.whatsappLink || "https://wa.me/916363606088"}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="btn-secondary inline-flex"
+                    className="btn-primary inline-flex"
                   >
                     WhatsApp Enquiry
                   </a>
-                </>
+                ) : (
+                  <>
+                    <div className="w-full sm:w-auto">
+                      <WorkshopPayButton
+                        workshopId={workshop.id || workshop.slug}
+                        workshopTitle={workshop.title}
+                        price={workshop.price}
+                        redirectUrl={workshop.paymentRedirectUrl}
+                      />
+                    </div>
+                    <a
+                      href={workshop.whatsappLink || "https://wa.me/916363606088"}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-secondary inline-flex"
+                    >
+                      WhatsApp Enquiry
+                    </a>
+                  </>
+                )
               ) : (
                 <button className="btn-primary inline-flex">
                   Get Recording Access

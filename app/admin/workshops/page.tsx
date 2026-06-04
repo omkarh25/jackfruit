@@ -25,6 +25,8 @@ const emptyWorkshop: Omit<WorkshopRecord, "id" | "createdAt" | "updatedAt"> = {
   whatsappLink: "https://wa.me/916363606088",
   registrationsEnabled: true,
   status: "active",
+  venueLink: "",
+  paymentRedirectUrl: "",
 };
 
 export default function AdminWorkshopsPage() {
@@ -85,6 +87,8 @@ export default function AdminWorkshopsPage() {
       whatsappLink: workshop.whatsappLink || "https://wa.me/916363606088",
       registrationsEnabled: workshop.registrationsEnabled ?? true,
       status: workshop.status || "active",
+      venueLink: workshop.venueLink || "",
+      paymentRedirectUrl: workshop.paymentRedirectUrl || "",
     });
     setDatesInput(workshop.dates?.join(", ") || "");
     setIsModalOpen(true);
@@ -385,10 +389,18 @@ export default function AdminWorkshopsPage() {
                   </label>
                   <select
                     value={form.format}
-                    onChange={(e) => setForm({ ...form, format: e.target.value as WorkshopRecord["format"] })}
+                    onChange={(e) => {
+                      const newFormat = e.target.value as WorkshopRecord["format"];
+                      setForm({
+                        ...form,
+                        format: newFormat,
+                        location: newFormat === "Offline" ? "Offline" : form.location,
+                      });
+                    }}
                     className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
                   >
                     <option value="Live Zoom">Live Zoom</option>
+                    <option value="Offline">Offline</option>
                     <option value="Recording">Recording</option>
                   </select>
                 </div>
@@ -476,6 +488,28 @@ export default function AdminWorkshopsPage() {
                 <label htmlFor="registrationsEnabled" className="text-sm text-tattvam-purple-700">
                   Registrations enabled
                 </label>
+              </div>
+              {form.format === "Offline" && (
+                <div>
+                  <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Venue Link (Optional)</label>
+                  <input
+                    type="text"
+                    value={form.venueLink || ""}
+                    onChange={(e) => setForm({ ...form, venueLink: e.target.value })}
+                    placeholder="e.g. https://maps.google.com/..."
+                    className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
+                  />
+                </div>
+              )}
+              <div>
+                <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Payment Redirect URL (Optional)</label>
+                <input
+                  type="text"
+                  value={form.paymentRedirectUrl || ""}
+                  onChange={(e) => setForm({ ...form, paymentRedirectUrl: e.target.value })}
+                  placeholder="e.g. https://chat.whatsapp.com/..."
+                  className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
+                />
               </div>
             </div>
             <div className="mt-6 flex justify-end gap-3">

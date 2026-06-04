@@ -97,9 +97,22 @@ function BookingContent({ serviceName }: { serviceName: string }) {
 
   async function handlePaymentSuccess() {
     showMessage("Payment successful! Your booking is confirmed.", "success");
+    let redirectUrl = "/profile";
+    try {
+      const { getAllServices } = await import("@/lib/db/services");
+      const allServices = await getAllServices();
+      const match = allServices.find(
+        (s) => s.title.toLowerCase() === serviceName.toLowerCase() || s.slug.toLowerCase() === serviceName.toLowerCase()
+      );
+      if (match?.paymentRedirectUrl) {
+        redirectUrl = match.paymentRedirectUrl;
+      }
+    } catch (e) {
+      console.error("Error finding service redirect URL:", e);
+    }
     // Give the user a moment to see the success message, then navigate.
     setTimeout(() => {
-      router.push("/profile");
+      router.push(redirectUrl);
     }, 1200);
   }
 

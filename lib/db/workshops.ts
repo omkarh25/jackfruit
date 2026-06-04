@@ -24,7 +24,7 @@ export interface WorkshopRecord {
   longDescription?: string;
   date: string;
   dates?: string[];
-  format: "Live Zoom" | "Recording";
+  format: "Live Zoom" | "Recording" | "Offline";
   price: number;
   enquiryMode?: boolean;
   maxParticipants?: number;
@@ -33,6 +33,8 @@ export interface WorkshopRecord {
   whatsappLink?: string;
   registrationsEnabled: boolean;
   status?: "active" | "archived";
+  venueLink?: string;
+  paymentRedirectUrl?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }

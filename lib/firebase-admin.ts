@@ -12,11 +12,10 @@ import admin from "firebase-admin";
  * "Generate new private key".
  */
 
-let adminApp: admin.app.App | null = null;
-
 export function getAdminApp(): admin.app.App {
-  if (adminApp) {
-    return adminApp;
+  // Reuse existing app if already initialized (important for Next.js hot-reloads)
+  if (admin.apps.length > 0) {
+    return admin.apps[0]!;
   }
 
   const projectId = process.env.FIREBASE_ADMIN_PROJECT_ID;
@@ -29,15 +28,13 @@ export function getAdminApp(): admin.app.App {
     );
   }
 
-  adminApp = admin.initializeApp({
+  return admin.initializeApp({
     credential: admin.credential.cert({
       projectId,
       clientEmail,
       privateKey,
     }),
   });
-
-  return adminApp;
 }
 
 export function getAdminDb(): admin.firestore.Firestore {

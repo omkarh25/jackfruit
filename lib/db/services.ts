@@ -29,6 +29,7 @@ export interface ServiceRecord {
   category?: "Healing" | "Coaching" | "Therapy";
   outcomes: string[];
   isVisible: boolean;
+  paymentRedirectUrl?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }

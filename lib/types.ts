@@ -16,6 +16,7 @@ export interface ServiceOffering {
   readonly duration: string;
   readonly price: string;
   readonly outcomes: readonly string[];
+  readonly paymentRedirectUrl?: string;
 }
 
 export interface Workshop {
@@ -23,11 +24,13 @@ export interface Workshop {
   readonly slug: string;
   readonly title: string;
   readonly date: string;
-  readonly format: "Live Zoom" | "Recording";
+  readonly format: "Live Zoom" | "Recording" | "Offline";
   readonly description: string;
   readonly longDescription?: string;
   readonly price?: string;
   readonly whatsappLink?: string;
+  readonly venueLink?: string;
+  readonly paymentRedirectUrl?: string;
 }
 
 export interface Course {

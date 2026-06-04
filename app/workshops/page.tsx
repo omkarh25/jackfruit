@@ -53,7 +53,7 @@ export default function WorkshopsPage() {
   return (
     <PageShell
       eyebrow="Workshops"
-      title="Live Zoom sessions and previous recordings"
+      title="Upcoming Workshops & Experiences"
       description="Discover upcoming workshops, join live sessions, and revisit recorded learning resources."
     >
       {isLoading ? (
@@ -79,7 +79,11 @@ export default function WorkshopsPage() {
                 </Link>
                 {workshop.format === "Live Zoom" ? (
                   <span className="inline-flex items-center rounded-full bg-tattvam-gold-100 px-4 py-2 text-xs font-bold text-tattvam-gold-700">
-                    ● Live
+                    ● Live Zoom
+                  </span>
+                ) : workshop.format === "Offline" ? (
+                  <span className="inline-flex items-center rounded-full bg-orange-100 px-4 py-2 text-xs font-bold text-orange-700">
+                    📍 Offline
                   </span>
                 ) : (
                   <span className="inline-flex items-center rounded-full bg-tattvam-purple-100 px-4 py-2 text-xs font-bold text-tattvam-purple-600">

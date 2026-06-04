@@ -21,6 +21,7 @@ const emptyService: Omit<ServiceRecord, "id" | "createdAt" | "updatedAt"> = {
   category: "Healing",
   outcomes: [],
   isVisible: true,
+  paymentRedirectUrl: "",
 };
 
 export default function AdminServicesPage() {
@@ -79,6 +80,7 @@ export default function AdminServicesPage() {
       category: service.category || "Healing",
       outcomes: service.outcomes || [],
       isVisible: service.isVisible,
+      paymentRedirectUrl: service.paymentRedirectUrl || "",
     });
     setDatesInput(service.dates?.join(", ") || "");
     setOutcomesInput(service.outcomes?.join(", ") || "");
@@ -446,6 +448,16 @@ export default function AdminServicesPage() {
                   value={outcomesInput}
                   onChange={(e) => setOutcomesInput(e.target.value)}
                   placeholder="e.g. Clarity, Emotional balance, Self-awareness"
+                  className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Payment Redirect URL (Optional)</label>
+                <input
+                  type="text"
+                  value={form.paymentRedirectUrl || ""}
+                  onChange={(e) => setForm({ ...form, paymentRedirectUrl: e.target.value })}
+                  placeholder="e.g. https://wa.me/..."
                   className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
                 />
               </div>

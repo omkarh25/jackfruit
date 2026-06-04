@@ -42,7 +42,7 @@ export default function AdminDashboardPage() {
     .filter((p) => p.status === "captured")
     .reduce((sum, p) => sum + (p.amount || 0), 0);
 
-  const liveWorkshops = workshops.filter((w) => w.format === "Live Zoom");
+  const liveWorkshops = workshops.filter((w) => w.format === "Live Zoom" || w.format === "Offline");
   const upcomingBookings = bookings.filter((b) => b.status === "upcoming");
 
   return (
