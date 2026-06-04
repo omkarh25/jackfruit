@@ -4,11 +4,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { PageShell } from "@/components/app-shell/page-shell";
 import { ContentCard } from "@/components/cards/content-card";
-import { RazorpayPaymentButton } from "@/components/payments/razorpay-payment-button";
 import { getVisibleServices, type ServiceRecord } from "@/lib/db/services";
 import { services as staticServices } from "@/lib/data";
-
-const paymentButtonId = "pl_SoNO4oJ81Hr0Mn";
 
 export default function ServicesPage() {
   const [services, setServices] = useState<ServiceRecord[]>([]);
@@ -76,9 +73,7 @@ export default function ServicesPage() {
                 >
                   Click to Know More
                 </Link>
-                {service.slug === "tarot-card-reading" ? (
-                  <RazorpayPaymentButton paymentButtonId={paymentButtonId} />
-                ) : null}
+
               </div>
             </ContentCard>
           ))}

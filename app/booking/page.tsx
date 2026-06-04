@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { PageShell } from "@/components/app-shell/page-shell";
 import { useAuth } from "@/components/auth/auth-provider";
@@ -9,7 +9,7 @@ import { ConsultationPayButton } from "@/components/payments/consultation-pay-bu
 import { getAvailableSlots, holdSlot, releaseSlot, type SlotRecord } from "@/lib/db/slots";
 import { createBooking } from "@/lib/db/bookings";
 
-export default function BookingPage() {
+function BookingContent({ serviceName }: { serviceName: string }) {
   const { firebaseUser, profile } = useAuth();
   const router = useRouter();
   const [slots, setSlots] = useState<SlotRecord[]>([]);
@@ -65,7 +65,7 @@ export default function BookingPage() {
       // 2. Create a pending booking record.
       const bookingId = await createBooking({
         userId: firebaseUser.uid,
-        serviceId: "1:1 Consultation",
+        serviceId: serviceName,
         clientName: profile.name || "",
         clientEmail: profile.email || "",
         clientPhone: "",
@@ -171,6 +171,9 @@ export default function BookingPage() {
           <h2 className="font-serif text-2xl font-bold text-tattvam-purple-900">Confirm Payment</h2>
           <div className="mt-4 rounded-xl bg-tattvam-purple-50 p-4">
             <p className="text-sm text-tattvam-purple-600">
+              <span className="font-medium">Service:</span> {serviceName}
+            </p>
+            <p className="text-sm text-tattvam-purple-600">
               <span className="font-medium">Date:</span> {selectedSlot.date}
             </p>
             <p className="text-sm text-tattvam-purple-600">
@@ -198,7 +201,7 @@ export default function BookingPage() {
               userId={firebaseUser.uid}
               customerName={profile?.name || firebaseUser.displayName || ""}
               customerEmail={profile?.email || firebaseUser.email || ""}
-              serviceTitle="1:1 Consultation"
+              serviceTitle={serviceName}
               onSuccess={handlePaymentSuccess}
               onFailure={handlePaymentFailure}
             />
@@ -286,6 +289,10 @@ export default function BookingPage() {
             {selectedSlot ? (
               <div className="mt-4 space-y-3">
                 <div className="flex justify-between text-sm">
+                  <span className="text-tattvam-purple-600">Service</span>
+                  <span className="font-medium text-tattvam-purple-800">{serviceName}</span>
+                </div>
+                <div className="flex justify-between text-sm">
                   <span className="text-tattvam-purple-600">Date</span>
                   <span className="font-medium text-tattvam-purple-800">{selectedSlot.date}</span>
                 </div>
@@ -331,5 +338,25 @@ export default function BookingPage() {
         </div>
       )}
     </PageShell>
+  );
+}
+
+function SearchParamsWrapper() {
+  const searchParams = useSearchParams();
+  const serviceName = searchParams.get("service") || "1:1 Consultation";
+  return <BookingContent serviceName={serviceName} />;
+}
+
+export default function BookingPage() {
+  return (
+    <Suspense fallback={
+      <PageShell eyebrow="1:1 Booking" title="Reserve a personal consultation slot" description="Loading...">
+        <div className="flex h-64 items-center justify-center">
+          <div className="text-tattvam-purple-400">Loading...</div>
+        </div>
+      </PageShell>
+    }>
+      <SearchParamsWrapper />
+    </Suspense>
   );
 }

@@ -49,12 +49,12 @@ export default function ProjectAnandaPage() {
           <Reveal delay={900}>
             <div className="mt-10">
               <a
-                href={WHATSAPP_LINK}
+                href="https://rzp.io/rzp/projectananda99"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-primary inline-flex"
               >
-                Enquire Now
+                Start Now
                 <span className="ml-2">→</span>
               </a>
             </div>
@@ -210,12 +210,10 @@ export default function ProjectAnandaPage() {
                 </div>
                 <div className="mt-auto pt-8">
                   <a
-                    href={WHATSAPP_LINK}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href="/services/project-ananda/pricing"
                     className="btn-secondary block w-full text-center"
                   >
-                    Enquire Now
+                    View Plans
                   </a>
                 </div>
               </div>
@@ -257,12 +255,10 @@ export default function ProjectAnandaPage() {
                 </div>
                 <div className="mt-auto pt-8">
                   <a
-                    href={WHATSAPP_LINK}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href="/services/project-ananda/pricing"
                     className="btn-primary block w-full text-center"
                   >
-                    Enquire Now
+                    View Plans
                   </a>
                 </div>
               </div>
@@ -301,12 +297,10 @@ export default function ProjectAnandaPage() {
                 </div>
                 <div className="mt-auto pt-8">
                   <a
-                    href={WHATSAPP_LINK}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    href="/services/project-ananda/pricing"
                     className="btn-secondary block w-full text-center"
                   >
-                    Enquire Now
+                    View Plans
                   </a>
                 </div>
               </div>
@@ -375,8 +369,8 @@ export default function ProjectAnandaPage() {
         </div>
       </section>
 
-      {/* Section 7: Starter Experience (Free Trial) */}
-      <section className="section-padding bg-tattvam-purple-900">
+      {/* Section 7: Starter Experience (1 Week Trial) */}
+      <section id="starter-experience" className="section-padding bg-tattvam-purple-900">
         <FloatingOrbs count={3} />
         <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
           <Reveal>
@@ -384,7 +378,7 @@ export default function ProjectAnandaPage() {
               Try Before You Commit
             </span>
             <h2 className="mt-6 font-serif text-4xl font-bold text-white md:text-5xl">
-              Starter Experience — <span className="text-tattvam-gold-400">Free Trial</span>
+              Starter Experience — <span className="text-tattvam-gold-400">1 Week Trial for 99/-</span>
             </h2>
           </Reveal>
 
@@ -412,12 +406,12 @@ export default function ProjectAnandaPage() {
           <Reveal delay={400}>
             <div className="mt-10">
               <a
-                href={WHATSAPP_LINK}
+                href="https://rzp.io/rzp/projectananda99"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="btn-primary inline-flex"
               >
-                Enquire Now
+                Start Now
                 <span className="ml-2">→</span>
               </a>
             </div>

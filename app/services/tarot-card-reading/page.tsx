@@ -87,7 +87,7 @@ export default function TarotCardReadingPage() {
               <Reveal delay={900}>
                 <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row md:items-start">
                   <a
-                    href="/booking"
+                    href="/booking?service=Tarot%20Card%20Reading"
                     className="btn-primary inline-flex"
                   >
                     Choose Available Slot
@@ -356,7 +356,7 @@ export default function TarotCardReadingPage() {
           <Reveal delay={400}>
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <a
-                href="/booking"
+                href="/booking?service=Tarot%20Card%20Reading"
                 className="btn-primary inline-flex"
               >
                 Choose Available Slot
