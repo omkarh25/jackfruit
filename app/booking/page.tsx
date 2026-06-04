@@ -1,27 +1,28 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageShell } from "@/components/app-shell/page-shell";
 import { useAuth } from "@/components/auth/auth-provider";
-import { RazorpayPaymentButton } from "@/components/payments/razorpay-payment-button";
-import { getAvailableSlots, bookSlot, type SlotRecord } from "@/lib/db/slots";
+import { ConsultationPayButton } from "@/components/payments/consultation-pay-button";
+import { getAvailableSlots, holdSlot, releaseSlot, type SlotRecord } from "@/lib/db/slots";
 import { createBooking } from "@/lib/db/bookings";
-
-const paymentButtonId = "pl_SiNXqS3vOzGc7l";
 
 export default function BookingPage() {
   const { firebaseUser, profile } = useAuth();
+  const router = useRouter();
   const [slots, setSlots] = useState<SlotRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedSlot, setSelectedSlot] = useState<SlotRecord | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
+  const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
 
   useEffect(() => {
     loadSlots();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   async function loadSlots() {
@@ -58,16 +59,17 @@ export default function BookingPage() {
     if (!selectedSlot || !firebaseUser || !profile) return;
 
     try {
-      // Mark slot as booked
-      await bookSlot(selectedSlot.id!, firebaseUser.uid);
+      // 1. Hold the slot so another user can't book it while payment is in progress.
+      await holdSlot(selectedSlot.id!, firebaseUser.uid);
 
-      // Create booking record
-      await createBooking({
+      // 2. Create a pending booking record.
+      const bookingId = await createBooking({
         userId: firebaseUser.uid,
         serviceId: "1:1 Consultation",
         clientName: profile.name || "",
         clientEmail: profile.email || "",
         clientPhone: "",
+        slotId: selectedSlot.id!,
         slotDate: selectedSlot.date,
         slotTime: selectedSlot.time,
         duration: selectedSlot.duration,
@@ -77,13 +79,58 @@ export default function BookingPage() {
         internalNotes: "",
       });
 
+      setCreatedBookingId(bookingId);
       setBookingConfirmed(true);
       showMessage("Slot reserved! Please complete payment below.", "success");
     } catch (e) {
       console.error(e);
       showMessage("Failed to reserve slot. It may have just been booked by someone else. Please try another slot.", "error");
+      // Try to clean up in case the slot was held locally but booking failed.
+      try {
+        await releaseSlot(selectedSlot.id!);
+      } catch {
+        // ignore cleanup errors
+      }
       await loadSlots();
     }
+  }
+
+  async function handlePaymentSuccess() {
+    showMessage("Payment successful! Your booking is confirmed.", "success");
+    // Give the user a moment to see the success message, then navigate.
+    setTimeout(() => {
+      router.push("/profile");
+    }, 1200);
+  }
+
+  async function handlePaymentFailure() {
+    if (!selectedSlot || !createdBookingId || !firebaseUser) return;
+
+    // Release the held slot and cancel the pending booking so the user can retry.
+    try {
+      await fetch("/api/booking/release", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          slotId: selectedSlot.id!,
+          bookingId: createdBookingId,
+          userId: firebaseUser.uid,
+        }),
+      });
+    } catch (err) {
+      console.error("Failed to release slot after payment failure:", err);
+      // Fallback: try client-side release.
+      try {
+        await releaseSlot(selectedSlot.id!);
+      } catch {
+        // ignore
+      }
+    }
+
+    setBookingConfirmed(false);
+    setCreatedBookingId(null);
+    showMessage("Payment was not completed. The slot has been released. You may try again.", "error");
+    await loadSlots();
   }
 
   if (!firebaseUser) {
@@ -119,7 +166,7 @@ export default function BookingPage() {
         </div>
       )}
 
-      {bookingConfirmed && selectedSlot ? (
+      {bookingConfirmed && selectedSlot && createdBookingId && firebaseUser ? (
         <div className="mx-auto max-w-xl rounded-2xl bg-white p-8 shadow-soft">
           <h2 className="font-serif text-2xl font-bold text-tattvam-purple-900">Confirm Payment</h2>
           <div className="mt-4 rounded-xl bg-tattvam-purple-50 p-4">
@@ -145,7 +192,16 @@ export default function BookingPage() {
             )}
           </div>
           <div className="mt-6">
-            <RazorpayPaymentButton paymentButtonId={paymentButtonId} />
+            <ConsultationPayButton
+              slotId={selectedSlot.id!}
+              bookingId={createdBookingId}
+              userId={firebaseUser.uid}
+              customerName={profile?.name || firebaseUser.displayName || ""}
+              customerEmail={profile?.email || firebaseUser.email || ""}
+              serviceTitle="1:1 Consultation"
+              onSuccess={handlePaymentSuccess}
+              onFailure={handlePaymentFailure}
+            />
           </div>
           <div className="mt-6 text-center">
             <Link href="/profile" className="text-sm font-medium text-tattvam-purple-600 underline hover:text-tattvam-purple-800">

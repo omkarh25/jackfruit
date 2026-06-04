@@ -25,6 +25,7 @@ export interface BookingRecord {
   clientName: string;
   clientEmail: string;
   clientPhone?: string;
+  slotId?: string;
   slotDate: string;
   slotTime: string;
   duration?: string;

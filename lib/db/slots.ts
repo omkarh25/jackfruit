@@ -82,6 +82,14 @@ export async function getBookedSlots(): Promise<SlotRecord[]> {
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as SlotRecord);
 }
 
+export async function holdSlot(id: string, userId: string): Promise<void> {
+  await updateDoc(doc(db, slotsCollection, id), {
+    status: "held",
+    bookedBy: userId,
+    updatedAt: serverTimestamp(),
+  });
+}
+
 export async function bookSlot(id: string, userId: string): Promise<void> {
   await updateDoc(doc(db, slotsCollection, id), {
     status: "booked",
