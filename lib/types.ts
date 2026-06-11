@@ -61,12 +61,26 @@ export interface BookingSlot {
   readonly status: "Available" | "Filling fast";
 }
 
+export type TestimonialType = "text" | "video" | "image";
+
+export interface TestimonialItem {
+  readonly id: string;
+  readonly type: TestimonialType;
+  readonly name: string;
+  readonly role: string;
+  readonly quote?: string;
+  readonly mediaUrl?: string;
+  readonly isFeatured: boolean;
+  readonly isApproved: boolean;
+  readonly createdAt: string;
+}
+
 export interface UserProfile {
   readonly uid: string;
   readonly name: string;
   readonly email: string;
   readonly photoURL?: string;
-  readonly role?: "learner" | "admin" | "super_admin";
+  readonly role?: "learner" | "admin" | "super_admin" | "coach";
   readonly purchasedCourseIds: readonly string[];
   readonly bookingIds: readonly string[];
   readonly createdAt: string;

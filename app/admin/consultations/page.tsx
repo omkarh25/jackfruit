@@ -16,6 +16,7 @@ import {
   deleteSlot,
   type SlotRecord,
 } from "@/lib/db/slots";
+import { getUserByEmail } from "@/lib/db/users";
 
 const emptyBooking: Omit<BookingRecord, "id" | "createdAt" | "updatedAt"> = {
   userId: "admin",
@@ -31,6 +32,16 @@ const emptyBooking: Omit<BookingRecord, "id" | "createdAt" | "updatedAt"> = {
   intakeNotes: "",
   internalNotes: "",
 };
+
+const TIME_OPTIONS = Array.from({ length: 30 }, (_, i) => {
+  const hour = Math.floor(i / 2) + 6;
+  const minute = i % 2 === 0 ? "00" : "30";
+  const labelHour = hour > 12 ? hour - 12 : hour;
+  const ampm = hour >= 12 ? "PM" : "AM";
+  const label = `${labelHour}:${minute} ${ampm}`;
+  const value = `${String(hour).padStart(2, "0")}:${minute}`;
+  return { label, value };
+});
 
 const emptySlot: Omit<SlotRecord, "id" | "createdAt" | "updatedAt"> = {
   date: "",
@@ -114,11 +125,23 @@ export default function AdminConsultationsPage() {
 
   async function handleSaveBooking() {
     try {
+      const data = { ...bookingForm };
+      // Try to link booking to actual user by email
+      if (data.clientEmail.trim()) {
+        try {
+          const user = await getUserByEmail(data.clientEmail.trim());
+          if (user) {
+            data.userId = user.uid;
+          }
+        } catch {
+          // ignore lookup errors
+        }
+      }
       if (editingBooking?.id) {
-        await updateBooking(editingBooking.id, bookingForm);
+        await updateBooking(editingBooking.id, data);
         showMessage("Booking updated successfully.", "success");
       } else {
-        await createBooking(bookingForm);
+        await createBooking(data);
         showMessage("Booking created successfully.", "success");
       }
       setIsBookingModalOpen(false);
@@ -198,13 +221,27 @@ export default function AdminConsultationsPage() {
     }
   }
 
-  const filteredBookings = bookings.filter((b) => {
-    const matchesSearch =
-      b.clientName.toLowerCase().includes(search.toLowerCase()) ||
-      b.clientEmail.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "All Status" || b.status === statusFilter.toLowerCase();
-    return matchesSearch && matchesStatus;
-  });
+  const filteredBookings = bookings
+    .filter((b) => {
+      const matchesSearch =
+        b.clientName.toLowerCase().includes(search.toLowerCase()) ||
+        b.clientEmail.toLowerCase().includes(search.toLowerCase());
+      const matchesStatus = statusFilter === "All Status" || b.status === statusFilter.toLowerCase();
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      // Sort by date (ascending), then by status (upcoming > completed > cancelled > no_show)
+      const parseSlotDate = (dateStr: string, timeStr: string) => {
+        const iso = `${dateStr}T${timeStr}`;
+        const d = new Date(iso);
+        return isNaN(d.getTime()) ? 0 : d.getTime();
+      };
+      const dateA = parseSlotDate(a.slotDate, a.slotTime);
+      const dateB = parseSlotDate(b.slotDate, b.slotTime);
+      if (dateA !== dateB) return dateA - dateB;
+      const statusOrder: Record<string, number> = { upcoming: 0, completed: 1, cancelled: 2, no_show: 3 };
+      return (statusOrder[a.status] ?? 4) - (statusOrder[b.status] ?? 4);
+    });
 
   const upcomingCount = bookings.filter((b) => b.status === "upcoming").length;
   const completedCount = bookings.filter((b) => b.status === "completed").length;
@@ -579,22 +616,26 @@ export default function AdminConsultationsPage() {
                 <div>
                   <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Date</label>
                   <input
-                    type="text"
+                    type="date"
                     value={bookingForm.slotDate}
                     onChange={(e) => setBookingForm({ ...bookingForm, slotDate: e.target.value })}
-                    placeholder="e.g. 15 May 2026"
                     className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
                   />
                 </div>
                 <div>
                   <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Time</label>
-                  <input
-                    type="text"
+                  <select
                     value={bookingForm.slotTime}
                     onChange={(e) => setBookingForm({ ...bookingForm, slotTime: e.target.value })}
-                    placeholder="e.g. 6:00 PM"
                     className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
-                  />
+                  >
+                    <option value="">Select time</option>
+                    {TIME_OPTIONS.map((t) => (
+                      <option key={t.value} value={t.value}>
+                        {t.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

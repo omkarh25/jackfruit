@@ -2,24 +2,29 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useAuth } from "@/components/auth/auth-provider";
 
-const navItems = [
-  { href: "/admin", label: "Dashboard", icon: "📊" },
-  { href: "/admin/workshops", label: "Workshops", icon: "🎓" },
-  { href: "/admin/services", label: "Services", icon: "✨" },
-  { href: "/admin/consultations", label: "1:1 Consultations", icon: "📅" },
-  { href: "/admin/courses", label: "Courses", icon: "📚" },
-  { href: "/admin/payments", label: "Payments", icon: "💰" },
-  { href: "/admin/users", label: "Users", icon: "👥" },
-  { href: "/admin/content", label: "Content CMS", icon: "📝" },
-  { href: "/admin/testimonials", label: "Testimonials", icon: "💬" },
-  { href: "/admin/notifications", label: "Notifications", icon: "🔔" },
-  { href: "/admin/offers", label: "Offers & Coupons", icon: "🎁" },
-  { href: "/admin/media", label: "Media Library", icon: "🖼️" },
+const allNavItems = [
+  { href: "/admin", label: "Dashboard", icon: "📊", roles: ["admin", "super_admin"] },
+  { href: "/admin/workshops", label: "Workshops", icon: "🎓", roles: ["admin", "super_admin"] },
+  { href: "/admin/services", label: "Services", icon: "✨", roles: ["admin", "super_admin"] },
+  { href: "/admin/consultations", label: "1:1 Consultations", icon: "📅", roles: ["admin", "super_admin", "coach"] },
+  { href: "/admin/courses", label: "Courses", icon: "📚", roles: ["admin", "super_admin"] },
+  { href: "/admin/payments", label: "Payments", icon: "💰", roles: ["admin", "super_admin"] },
+  { href: "/admin/users", label: "Users", icon: "👥", roles: ["admin", "super_admin"] },
+  { href: "/admin/content", label: "Content CMS", icon: "📝", roles: ["admin", "super_admin"] },
+  { href: "/admin/testimonials", label: "Testimonials", icon: "💬", roles: ["admin", "super_admin"] },
+  { href: "/admin/notifications", label: "Notifications", icon: "🔔", roles: ["admin", "super_admin"] },
+  { href: "/admin/offers", label: "Offers & Coupons", icon: "🎁", roles: ["admin", "super_admin"] },
+  { href: "/admin/media", label: "Media Library", icon: "🖼️", roles: ["admin", "super_admin"] },
 ] as const;
 
 export function AdminSidebar() {
   const pathname = usePathname();
+  const { profile } = useAuth();
+  const role = profile?.role ?? "learner";
+
+  const navItems = allNavItems.filter((item) => item.roles.includes(role as never));
 
   return (
     <aside className="fixed left-0 top-0 z-40 h-screen w-64 border-r border-tattvam-purple-800 bg-tattvam-purple-900 text-white">
@@ -66,8 +71,8 @@ export function AdminSidebar() {
               👤
             </div>
             <div>
-              <p className="text-sm font-medium">Admin User</p>
-              <p className="text-xs text-tattvam-purple-400">Super Admin</p>
+              <p className="text-sm font-medium">{profile?.name || "User"}</p>
+              <p className="text-xs text-tattvam-purple-400 capitalize">{profile?.role?.replace("_", " ") || "Learner"}</p>
             </div>
           </div>
         </div>

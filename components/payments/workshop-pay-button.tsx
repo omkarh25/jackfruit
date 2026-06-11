@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { LOGGER } from "@/lib/logger";
+import { PaymentSuccessModal } from "./payment-success-modal";
 
 export interface WorkshopPayButtonProps {
   workshopId: string;
@@ -28,6 +29,7 @@ export function WorkshopPayButton({
 }: WorkshopPayButtonProps) {
   const { firebaseUser, profile, loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const handlePay = async () => {
     // 1. If not logged in, prompt sign in.
@@ -109,13 +111,7 @@ export function WorkshopPayButton({
 
             if (verifyData.success) {
               LOGGER.info("Workshop payment successful", { workshopId, redirectUrl });
-              
-              // 5. Redirect on success
-              if (redirectUrl) {
-                window.location.href = redirectUrl;
-              } else {
-                window.location.href = "/profile";
-              }
+              setShowSuccess(true);
             } else {
               LOGGER.error("Workshop verification failed", { response: verifyData });
               alert(verifyData.error || "Payment verification failed. Please contact support.");
@@ -146,17 +142,31 @@ export function WorkshopPayButton({
   };
 
   return (
-    <button
-      onClick={handlePay}
-      disabled={loading}
-      className={className}
-      aria-busy={loading}
-    >
-      {!firebaseUser
-        ? "Sign In to Register"
-        : loading
-        ? "Processing…"
-        : `${buttonText} (₹${price})`}
-    </button>
+    <>
+      <button
+        onClick={handlePay}
+        disabled={loading}
+        className={className}
+        aria-busy={loading}
+      >
+        {!firebaseUser
+          ? "Sign In to Register"
+          : loading
+          ? "Processing…"
+          : `${buttonText} (₹${price})`}
+      </button>
+
+      {showSuccess && (
+        <PaymentSuccessModal
+          itemName={workshopTitle}
+          itemType="workshop"
+          redirectUrl={redirectUrl}
+          onClose={() => {
+            setShowSuccess(false);
+            window.location.href = "/profile";
+          }}
+        />
+      )}
+    </>
   );
 }

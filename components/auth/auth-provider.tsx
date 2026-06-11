@@ -13,6 +13,8 @@ interface AuthContextValue {
   readonly profile: UserProfile | null;
   readonly isLoading: boolean;
   readonly isAdmin: boolean;
+  readonly isCoach: boolean;
+  readonly isStaff: boolean;
   readonly loginWithGoogle: () => Promise<void>;
   readonly logout: () => Promise<void>;
   readonly unlockCourse: (courseId: string) => void;
@@ -117,10 +119,12 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
   );
 
   const isAdmin = profile?.role === "admin" || profile?.role === "super_admin";
+  const isCoach = profile?.role === "coach";
+  const isStaff = isAdmin || isCoach;
 
   const value = useMemo(
-    () => ({ firebaseUser, profile, isLoading, isAdmin, loginWithGoogle, logout, unlockCourse }),
-    [firebaseUser, profile, isLoading, isAdmin, loginWithGoogle, logout, unlockCourse]
+    () => ({ firebaseUser, profile, isLoading, isAdmin, isCoach, isStaff, loginWithGoogle, logout, unlockCourse }),
+    [firebaseUser, profile, isLoading, isAdmin, isCoach, isStaff, loginWithGoogle, logout, unlockCourse]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

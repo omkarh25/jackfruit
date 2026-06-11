@@ -1,7 +1,7 @@
 /* eslint-disable react/no-unescaped-entities */
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import gsap from "gsap";
@@ -20,6 +20,9 @@ import {
   BackgroundMusic,
 } from "@/components/animations";
 import { LOGGER } from "@/lib/logger";
+import { TestimonialCarousel } from "@/components/testimonials/testimonial-carousel";
+import { getApprovedTestimonials } from "@/lib/db/testimonials";
+import type { TestimonialItem } from "@/lib/types";
 
 if (typeof window !== "undefined") {
   gsap.registerPlugin(ScrollTrigger);
@@ -48,7 +51,6 @@ export default function HomePage() {
   const missionRef = useRef<HTMLDivElement>(null);
   const statNumbersRef = useRef<HTMLDivElement>(null);
   const checklistRef = useRef<HTMLDivElement>(null);
-  const testimonialsRef = useRef<HTMLDivElement>(null);
   const communityRef = useRef<HTMLDivElement>(null);
 
   // ─── 1. Hero Load Sequence ───
@@ -271,34 +273,30 @@ export default function HomePage() {
     return () => ctx.revert();
   }, []);
 
-  // ─── 7. Testimonials 3D Entry ───
+  // ─── Testimonials data ───
+  const [testimonials, setTestimonials] = useState<TestimonialItem[]>([]);
+  const [testimonialsLoaded, setTestimonialsLoaded] = useState(false);
+
   useEffect(() => {
-    if (!testimonialsRef.current) return;
-    const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
-    if (mql.matches) return;
-
-    const cards = testimonialsRef.current.querySelectorAll(".testimonial-card");
-    const ctx = gsap.context(() => {
-      gsap.fromTo(
-        cards,
-        { y: 60, rotateX: 10, opacity: 0 },
-        {
-          y: 0,
-          rotateX: 0,
-          opacity: 1,
-          duration: 0.8,
-          stagger: 0.15,
-          ease: "power3.out",
-          scrollTrigger: {
-            trigger: testimonialsRef.current,
-            start: "top 80%",
-            toggleActions: "play none none none",
-          },
-        }
-      );
-    });
-
-    return () => ctx.revert();
+    getApprovedTestimonials()
+      .then((records) => {
+        const mapped: TestimonialItem[] = records.map((r) => ({
+          id: r.id || "",
+          type: r.type || "text",
+          name: r.name,
+          role: r.role,
+          quote: r.quote,
+          mediaUrl: r.mediaUrl,
+          isFeatured: r.isFeatured ?? false,
+          isApproved: r.isApproved ?? true,
+          createdAt: r.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
+        }));
+        setTestimonials(mapped);
+        setTestimonialsLoaded(true);
+      })
+      .catch(() => {
+        setTestimonialsLoaded(true);
+      });
   }, []);
 
   // ─── 8. Community Card Scale ───
@@ -833,62 +831,60 @@ export default function HomePage() {
             </div>
           </GSAPReveal>
 
-          <div
-            ref={testimonialsRef}
-            className="grid gap-8 md:grid-cols-3"
-            style={{ perspective: "800px" }}
-          >
-            {[
-              {
-                quote:
-                  "I had the privilege of experiencing Past Life Regression (PLR) with Hema, and it was truly transformative. With ego state techniques, I resolved lifelong issues, freeing my mind and heart. Hema's calm and compassionate demeanor made connection effortless.",
-                author: "Geetanjali Sarna",
-                role: "Akashik Records Reader",
-              },
-              {
-                quote:
-                  "Hema helped me work on my relationship with my wife. The 21 day journey of healing with Hema was phenomenal. She is strict when it comes to following the instructions but it worked magically. We are expecting the good news soon. God Bless you.",
-                author: "Namo",
-                role: "IIT JEE Coach",
-              },
-              {
-                quote:
-                  "I highly recommend Hema for profound personal growth and healing. She's my go-to person forever for sure. In profound gratitude and full faith.",
-                author: "Paul",
-                role: "Designation",
-              },
-            ].map((testimonial, i) => (
-              <div
-                key={testimonial.author}
-                className={`testimonial-card testimonial-float glass-card-dark h-full rounded-3xl p-8`}
-                style={{
-                  animationDelay: `${i * 0.8}s`,
-                  transformStyle: "preserve-3d",
-                }}
-              >
-                <div className="mb-4 text-4xl text-tattvam-gold-400 opacity-50">
-                  <PulsatingAura
-                    color="gold"
-                    intensity="subtle"
-                    speed="medium"
-                  >
-                    "
-                  </PulsatingAura>
-                </div>
-                <p className="text-purple-100/90">
-                  &ldquo;{testimonial.quote}&rdquo;
-                </p>
-                <div className="mt-6 border-t border-tattvam-purple-600/30 pt-6">
-                  <p className="font-semibold text-white">
-                    {testimonial.author}
-                  </p>
-                  <p className="text-sm text-tattvam-purple-300/70">
-                    {testimonial.role}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+          {testimonialsLoaded && testimonials.length > 0 ? (
+            <TestimonialCarousel testimonials={testimonials} />
+          ) : testimonialsLoaded ? (
+            <TestimonialCarousel
+              testimonials={[
+                {
+                  id: "static-1",
+                  type: "text",
+                  name: "Geetanjali Sarna",
+                  role: "Akashik Records Reader",
+                  quote:
+                    "I had the privilege of experiencing Past Life Regression (PLR) with Hema, and it was truly transformative. With ego state techniques, I resolved lifelong issues, freeing my mind and heart. Hema's calm and compassionate demeanor made connection effortless.",
+                  isFeatured: true,
+                  isApproved: true,
+                  createdAt: new Date().toISOString(),
+                },
+                {
+                  id: "static-2",
+                  type: "text",
+                  name: "Namo",
+                  role: "IIT JEE Coach",
+                  quote:
+                    "Hema helped me work on my relationship with my wife. The 21 day journey of healing with Hema was phenomenal. She is strict when it comes to following the instructions but it worked magically. We are expecting the good news soon. God Bless you.",
+                  isFeatured: true,
+                  isApproved: true,
+                  createdAt: new Date().toISOString(),
+                },
+                {
+                  id: "static-video-1",
+                  type: "video",
+                  name: "Client Story 1",
+                  role: "Wellness Seeker",
+                  mediaUrl: "/assets/testimonials/testimonial_1.mp4",
+                  isFeatured: true,
+                  isApproved: true,
+                  createdAt: new Date().toISOString(),
+                },
+                {
+                  id: "static-video-2",
+                  type: "video",
+                  name: "Client Story 2",
+                  role: "Wellness Seeker",
+                  mediaUrl: "/assets/testimonials/testimonial_2.mp4",
+                  isFeatured: true,
+                  isApproved: true,
+                  createdAt: new Date().toISOString(),
+                },
+              ]}
+            />
+          ) : (
+            <div className="flex h-64 items-center justify-center">
+              <div className="text-tattvam-purple-400">Loading testimonials...</div>
+            </div>
+          )}
         </div>
       </section>
 

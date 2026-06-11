@@ -6,6 +6,7 @@ import Link from "next/link";
 import { PageShell } from "@/components/app-shell/page-shell";
 import { useAuth } from "@/components/auth/auth-provider";
 import { ConsultationPayButton } from "@/components/payments/consultation-pay-button";
+import { PaymentSuccessModal } from "@/components/payments/payment-success-modal";
 import { getAvailableSlots, holdSlot, releaseSlot, type SlotRecord } from "@/lib/db/slots";
 import { createBooking } from "@/lib/db/bookings";
 
@@ -19,6 +20,8 @@ function BookingContent({ serviceName }: { serviceName: string }) {
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [createdBookingId, setCreatedBookingId] = useState<string | null>(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [successRedirectUrl, setSuccessRedirectUrl] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     loadSlots();
@@ -97,7 +100,7 @@ function BookingContent({ serviceName }: { serviceName: string }) {
 
   async function handlePaymentSuccess() {
     showMessage("Payment successful! Your booking is confirmed.", "success");
-    let redirectUrl = "/profile";
+    let redirectUrl: string | undefined;
     try {
       const { getAllServices } = await import("@/lib/db/services");
       const allServices = await getAllServices();
@@ -110,10 +113,8 @@ function BookingContent({ serviceName }: { serviceName: string }) {
     } catch (e) {
       console.error("Error finding service redirect URL:", e);
     }
-    // Give the user a moment to see the success message, then navigate.
-    setTimeout(() => {
-      router.push(redirectUrl);
-    }, 1200);
+    setSuccessRedirectUrl(redirectUrl);
+    setShowSuccessModal(true);
   }
 
   async function handlePaymentFailure() {
@@ -177,6 +178,18 @@ function BookingContent({ serviceName }: { serviceName: string }) {
         >
           {message.text}
         </div>
+      )}
+
+      {showSuccessModal && (
+        <PaymentSuccessModal
+          itemName={serviceName}
+          itemType="consultation"
+          redirectUrl={successRedirectUrl}
+          onClose={() => {
+            setShowSuccessModal(false);
+            router.push("/profile");
+          }}
+        />
       )}
 
       {bookingConfirmed && selectedSlot && createdBookingId && firebaseUser ? (

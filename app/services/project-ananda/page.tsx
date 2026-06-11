@@ -11,7 +11,7 @@ export default function ProjectAnandaPage() {
       <Navigation />
 
       {/* Section 1: Hero */}
-      <section className="relative flex min-h-[90vh] items-center justify-center px-6 pt-20">
+      <section id="ananda-hero" className="relative flex min-h-[90vh] items-center justify-center px-6 pt-20">
         <FloatingOrbs count={5} />
         <div className="absolute left-1/4 top-1/4 h-64 w-64 rounded-full bg-tattvam-gold-200/30 blur-3xl animate-float-slow" />
         <div className="absolute bottom-1/4 right-1/4 h-80 w-80 rounded-full bg-tattvam-purple-200/30 blur-3xl animate-float-slow" style={{ animationDelay: "2s" }} />
@@ -63,7 +63,7 @@ export default function ProjectAnandaPage() {
       </section>
 
       {/* Section 2: About */}
-      <section className="section-padding bg-gradient-to-b from-white to-tattvam-purple-50">
+      <section id="ananda-about" className="section-padding bg-gradient-to-b from-white to-tattvam-purple-50">
         <div className="mx-auto max-w-6xl px-6">
           <Reveal>
             <div className="mb-12 text-center">
@@ -93,7 +93,7 @@ export default function ProjectAnandaPage() {
       </section>
 
       {/* Section 3: 3-Step Diagnosis System */}
-      <section className="section-padding">
+      <section id="ananda-diagnosis" className="section-padding">
         <div className="mx-auto max-w-6xl px-6">
           <Reveal>
             <div className="mb-16 text-center">
@@ -160,7 +160,7 @@ export default function ProjectAnandaPage() {
       </section>
 
       {/* Section 4: Choose Your Path */}
-      <section className="section-padding bg-tattvam-purple-900">
+      <section id="ananda-memberships" className="section-padding bg-tattvam-purple-900">
         <FloatingOrbs count={4} />
         <div className="relative z-10 mx-auto max-w-6xl px-6">
           <Reveal>
@@ -310,7 +310,7 @@ export default function ProjectAnandaPage() {
       </section>
 
       {/* Section 5: Why Project Ananda Works */}
-      <section className="section-padding">
+      <section id="ananda-why-works" className="section-padding">
         <div className="mx-auto max-w-4xl px-6 text-center">
           <Reveal>
             <div className="glass-card rounded-[2rem] p-12">
@@ -332,7 +332,7 @@ export default function ProjectAnandaPage() {
       </section>
 
       {/* Section 6: Who Is This For */}
-      <section className="section-padding bg-gradient-to-b from-tattvam-purple-50 to-white">
+      <section id="ananda-who-for" className="section-padding bg-gradient-to-b from-tattvam-purple-50 to-white">
         <div className="mx-auto max-w-3xl px-6">
           <Reveal>
             <div className="text-center">
@@ -370,7 +370,7 @@ export default function ProjectAnandaPage() {
       </section>
 
       {/* Section 7: Starter Experience (1 Week Trial) */}
-      <section id="starter-experience" className="section-padding bg-tattvam-purple-900">
+      <section id="ananda-trial" className="section-padding bg-tattvam-purple-900">
         <FloatingOrbs count={3} />
         <div className="relative z-10 mx-auto max-w-4xl px-6 text-center">
           <Reveal>

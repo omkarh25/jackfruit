@@ -22,7 +22,7 @@ export interface FirestoreUserProfile {
   email: string;
   phone?: string;
   photoURL?: string;
-  role: "learner" | "admin" | "super_admin";
+  role: "learner" | "admin" | "super_admin" | "coach";
   tags?: string[];
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
@@ -75,7 +75,13 @@ export async function getAllUsers(): Promise<FirestoreUserProfile[]> {
   return snap.docs.map((d) => d.data() as FirestoreUserProfile);
 }
 
-export async function getUsersByRole(role: "learner" | "admin" | "super_admin"): Promise<FirestoreUserProfile[]> {
+export async function getUserByEmail(email: string): Promise<FirestoreUserProfile | null> {
+  const q = query(collection(db, usersCollection), where("email", "==", email));
+  const snap = await getDocs(q);
+  return snap.empty ? null : (snap.docs[0].data() as FirestoreUserProfile);
+}
+
+export async function getUsersByRole(role: "learner" | "admin" | "super_admin" | "coach"): Promise<FirestoreUserProfile[]> {
   const q = query(collection(db, usersCollection), where("role", "==", role));
   const snap = await getDocs(q);
   return snap.docs.map((d) => d.data() as FirestoreUserProfile);

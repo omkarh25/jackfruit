@@ -7,28 +7,37 @@ import { getAllWorkshops, type WorkshopRecord } from "@/lib/db/workshops";
 import { getAllServices, type ServiceRecord } from "@/lib/db/services";
 import { getAllBookings, type BookingRecord } from "@/lib/db/bookings";
 import { getAllPayments, type PaymentRecord } from "@/lib/db/payments";
-import { bookingSlots } from "@/lib/data";
+import { getAvailableSlots, type SlotRecord } from "@/lib/db/slots";
 
 export default function AdminDashboardPage() {
   const [workshops, setWorkshops] = useState<WorkshopRecord[]>([]);
   const [services, setServices] = useState<ServiceRecord[]>([]);
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
+  const [slots, setSlots] = useState<SlotRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     async function loadData() {
       try {
-        const [w, s, b, p] = await Promise.all([
+        const [w, s, b, p, availableSlots] = await Promise.all([
           getAllWorkshops(),
           getAllServices(),
           getAllBookings(),
           getAllPayments(),
+          getAvailableSlots(),
         ]);
         setWorkshops(w);
         setServices(s);
         setBookings(b);
         setPayments(p);
+        // Sort slots by date/time
+        availableSlots.sort((a, b) => {
+          const da = new Date(`${a.date}T${a.time}`);
+          const db = new Date(`${b.date}T${b.time}`);
+          return da.getTime() - db.getTime();
+        });
+        setSlots(availableSlots.slice(0, 5));
       } catch (err) {
         console.error("Failed to load dashboard data:", err);
       } finally {
@@ -44,6 +53,7 @@ export default function AdminDashboardPage() {
 
   const liveWorkshops = workshops.filter((w) => w.format === "Live Zoom" || w.format === "Offline");
   const upcomingBookings = bookings.filter((b) => b.status === "upcoming");
+  const activeServices = services.filter((s) => s.isVisible !== false);
 
   return (
     <AdminShell title="Dashboard" subtitle="Quick snapshot of your business performance">
@@ -94,7 +104,7 @@ export default function AdminDashboardPage() {
               </h2>
               <div className="mt-4 space-y-3">
                 {liveWorkshops.length > 0 ? (
-                  liveWorkshops.map((workshop) => (
+                  liveWorkshops.slice(0, 5).map((workshop) => (
                     <div
                       key={workshop.id}
                       className="flex items-center justify-between rounded-xl bg-tattvam-purple-50 p-4"
@@ -120,8 +130,8 @@ export default function AdminDashboardPage() {
                 Active Services
               </h2>
               <div className="mt-4 space-y-3">
-                {services.length > 0 ? (
-                  services.slice(0, 5).map((service) => (
+                {activeServices.length > 0 ? (
+                  activeServices.slice(0, 5).map((service) => (
                     <div
                       key={service.id}
                       className="flex items-center justify-between rounded-xl bg-tattvam-purple-50 p-4"
@@ -137,9 +147,9 @@ export default function AdminDashboardPage() {
                   ))
                 ) : (
                   <p className="text-sm text-tattvam-purple-400">
-                    No services found.{" "}
-                    <a href="/admin/seed" className="text-tattvam-purple-600 underline">
-                      Seed data first →
+                    No active services found.{" "}
+                    <a href="/admin/services" className="text-tattvam-purple-600 underline">
+                      Manage services →
                     </a>
                   </p>
                 )}
@@ -152,27 +162,31 @@ export default function AdminDashboardPage() {
                 Available Booking Slots
               </h2>
               <div className="mt-4 space-y-3">
-                {bookingSlots.map((slot) => (
-                  <div
-                    key={slot.id}
-                    className="flex items-center justify-between rounded-xl bg-tattvam-purple-50 p-4"
-                  >
-                    <div>
-                      <p className="font-medium text-tattvam-purple-800">
-                        {slot.date} at {slot.time}
-                      </p>
-                    </div>
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-bold ${
-                        slot.status === "Available"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-amber-100 text-amber-700"
-                      }`}
+                {slots.length > 0 ? (
+                  slots.map((slot) => (
+                    <div
+                      key={slot.id}
+                      className="flex items-center justify-between rounded-xl bg-tattvam-purple-50 p-4"
                     >
-                      {slot.status}
-                    </span>
-                  </div>
-                ))}
+                      <div>
+                        <p className="font-medium text-tattvam-purple-800">
+                          {new Date(slot.date).toLocaleDateString(undefined, {
+                            weekday: "short",
+                            month: "short",
+                            day: "numeric",
+                          })}{" "}
+                          at {slot.time}
+                        </p>
+                        <p className="text-xs text-tattvam-purple-500">{slot.duration}</p>
+                      </div>
+                      <span className="rounded-full bg-green-100 px-3 py-1 text-xs font-bold text-green-700">
+                        Available
+                      </span>
+                    </div>
+                  ))
+                ) : (
+                  <p className="text-sm text-tattvam-purple-400">No available slots right now.</p>
+                )}
               </div>
             </div>
 

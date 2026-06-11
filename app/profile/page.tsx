@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import Image from "next/image";
 import { useAuth } from "@/components/auth/auth-provider";
 import { PageShell } from "@/components/app-shell/page-shell";
-import { getBookingsByUser, type BookingRecord } from "@/lib/db/bookings";
+import { getBookingsByUser, getBookingsByEmail, type BookingRecord } from "@/lib/db/bookings";
 import { getPaymentsByUser, type PaymentRecord } from "@/lib/db/payments";
 import { getWorkshopById } from "@/lib/db/workshops";
 import { getServiceById } from "@/lib/db/services";
@@ -68,10 +68,21 @@ export default function ProfilePage() {
   async function loadUserData(uid: string) {
     setIsLoading(true);
     try {
-      const [bookings, payments] = await Promise.all([
+      const [userBookings, emailBookings, payments] = await Promise.all([
         getBookingsByUser(uid),
+        profile?.email ? getBookingsByEmail(profile.email) : Promise.resolve([]),
         getPaymentsByUser(uid),
       ]);
+
+      // Merge and deduplicate bookings by id
+      const bookingMap = new Map<string, BookingRecord>();
+      for (const b of userBookings) {
+        if (b.id) bookingMap.set(b.id, b);
+      }
+      for (const b of emailBookings) {
+        if (b.id) bookingMap.set(b.id, b);
+      }
+      const bookings = Array.from(bookingMap.values());
 
       const enriched: EnrichedItem[] = [];
 

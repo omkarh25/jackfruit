@@ -1,6 +1,7 @@
 import { getApps, initializeApp, type FirebaseApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, type Auth } from "firebase/auth";
 import { getFirestore, type Firestore } from "firebase/firestore";
+import { getStorage, type FirebaseStorage } from "firebase/storage";
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -43,4 +44,15 @@ export function getFirestoreDb(): Firestore {
     firestoreInstance = getFirestore(getFirebaseApp());
   }
   return firestoreInstance;
+}
+
+/**
+ * Returns Firebase Storage instance.
+ */
+let storageInstance: FirebaseStorage | null = null;
+export function getFirebaseStorage(): FirebaseStorage {
+  if (!storageInstance) {
+    storageInstance = getStorage(getFirebaseApp());
+  }
+  return storageInstance;
 }

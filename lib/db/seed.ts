@@ -75,6 +75,7 @@ export async function seedTestimonials(): Promise<void> {
   console.log("Seeding testimonials...");
   const testimonials: Omit<TestimonialRecord, "id" | "createdAt">[] = [
     {
+      type: "text",
       name: "Geetanjali Sarna",
       role: "Akashik Records Reader",
       quote:
@@ -83,6 +84,7 @@ export async function seedTestimonials(): Promise<void> {
       isApproved: true,
     },
     {
+      type: "text",
       name: "Namo",
       role: "IIT JEE Coach",
       quote:
@@ -91,6 +93,7 @@ export async function seedTestimonials(): Promise<void> {
       isApproved: true,
     },
     {
+      type: "text",
       name: "Paul",
       role: "Designation",
       quote:

@@ -13,7 +13,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<FirestoreUserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<"All" | "learner" | "admin" | "super_admin">("All");
+  const [roleFilter, setRoleFilter] = useState<"All" | "learner" | "admin" | "super_admin" | "coach">("All");
   const [selectedUser, setSelectedUser] = useState<FirestoreUserProfile | null>(null);
   const [userDetails, setUserDetails] = useState<{
     bookings: { id: string; type: string; title: string; date: string; status: string }[];
@@ -140,6 +140,7 @@ export default function AdminUsersPage() {
             <option value="learner">Learner</option>
             <option value="admin">Admin</option>
             <option value="super_admin">Super Admin</option>
+            <option value="coach">Coach</option>
           </select>
           <input
             type="text"
@@ -190,6 +191,8 @@ export default function AdminUsersPage() {
                           ? "bg-purple-100 text-purple-700"
                           : user.role === "admin"
                           ? "bg-amber-100 text-amber-700"
+                          : user.role === "coach"
+                          ? "bg-blue-100 text-blue-700"
                           : "bg-green-100 text-green-700"
                       }`}
                     >
@@ -215,6 +218,7 @@ export default function AdminUsersPage() {
                         <option value="learner">Learner</option>
                         <option value="admin">Admin</option>
                         <option value="super_admin">Super Admin</option>
+                        <option value="coach">Coach</option>
                       </select>
                     </div>
                   </td>
@@ -250,6 +254,8 @@ export default function AdminUsersPage() {
                     ? "bg-purple-100 text-purple-700"
                     : selectedUser.role === "admin"
                     ? "bg-amber-100 text-amber-700"
+                    : selectedUser.role === "coach"
+                    ? "bg-blue-100 text-blue-700"
                     : "bg-green-100 text-green-700"
                 }`}
               >

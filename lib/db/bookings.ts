@@ -92,3 +92,13 @@ export async function getBookingsByStatus(status: BookingRecord["status"]): Prom
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as BookingRecord);
 }
+
+export async function getBookingsByEmail(email: string): Promise<BookingRecord[]> {
+  const q = query(
+    collection(db, bookingsCollection),
+    where("clientEmail", "==", email),
+    orderBy("createdAt", "desc")
+  );
+  const snap = await getDocs(q);
+  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as BookingRecord);
+}
