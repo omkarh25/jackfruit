@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyRazorpaySignature } from "@/lib/payment";
 import { getAdminDb } from "@/lib/firebase-admin";
+import { sendConfirmationEmail } from "@/lib/notification-helpers";
 
 export interface VerifyMembershipRequest {
   razorpay_order_id: string;
@@ -61,6 +62,7 @@ export async function POST(req: Request) {
     }
 
     const paymentDoc = paymentsQuery.docs[0];
+    const paymentData = paymentDoc.data();
 
     // 3. Update payment record.
     await paymentDoc.ref.update({
@@ -69,6 +71,36 @@ export async function POST(req: Request) {
       razorpaySignature: razorpay_signature,
       updatedAt: new Date(),
     });
+
+    // 4. Send confirmation email
+    try {
+      const userId = paymentData?.userId;
+      let customerName = "";
+      let customerEmail = "";
+      if (userId) {
+        const userSnap = await getAdminDb().collection("users").doc(userId).get();
+        if (userSnap.exists) {
+          const userData = userSnap.data();
+          customerName = userData?.name || "";
+          customerEmail = userData?.email || "";
+        }
+      }
+
+      if (customerEmail) {
+        await sendConfirmationEmail({
+          itemType: "service",
+          itemTitle: paymentData?.itemTitle || "Project Ananda Membership",
+          itemId: paymentDoc.id,
+          date: "Ongoing program",
+          customerName,
+          customerEmail,
+          userId,
+          amount: paymentData?.amount,
+        });
+      }
+    } catch (emailErr) {
+      console.error("[membership/verify] Failed to send confirmation email:", emailErr);
+    }
 
     return NextResponse.json<VerifyMembershipResponse>({
       success: true,

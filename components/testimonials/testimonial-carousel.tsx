@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import Image from "next/image";
 import type { TestimonialItem } from "@/lib/types";
 
@@ -11,7 +11,7 @@ interface TestimonialCarouselProps {
 
 export function TestimonialCarousel({
   testimonials,
-  autoPlayInterval = 6000,
+  autoPlayInterval: _autoPlayInterval = 6000, // kept for API compatibility
 }: TestimonialCarouselProps) {
   const [current, setCurrent] = useState(0);
 
@@ -23,11 +23,7 @@ export function TestimonialCarousel({
     setCurrent((i) => (i - 1 + testimonials.length) % testimonials.length);
   }, [testimonials.length]);
 
-  useEffect(() => {
-    if (testimonials.length <= 1) return;
-    const timer = setInterval(next, autoPlayInterval);
-    return () => clearInterval(timer);
-  }, [next, autoPlayInterval, testimonials.length]);
+  // Auto-play removed — user navigates manually
 
   if (testimonials.length === 0) {
     return (

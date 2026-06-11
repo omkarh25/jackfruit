@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { verifyRazorpaySignature } from "@/lib/payment";
 import { getAdminDb } from "@/lib/firebase-admin";
+import { sendConfirmationEmail } from "@/lib/notification-helpers";
 
 export interface VerifyPaymentRequestBody {
   razorpay_order_id: string;
@@ -83,9 +84,28 @@ export async function POST(req: Request) {
         status: "upcoming",
         updatedAt: new Date(),
       });
+
+      // 5. Send confirmation email
+      try {
+        const amount = paymentDoc.data()?.amount;
+        await sendConfirmationEmail({
+          itemType: "consultation",
+          itemTitle: bookingData?.serviceId || "1:1 Consultation",
+          itemId: bookingId,
+          date: bookingData?.slotDate || "",
+          time: bookingData?.slotTime || "",
+          meetingLink: bookingData?.meetingLink || undefined,
+          customerName: bookingData?.clientName || "",
+          customerEmail: bookingData?.clientEmail || "",
+          userId: bookingData?.userId || "",
+          amount,
+        });
+      } catch (emailErr) {
+        console.error("[verify-payment] Failed to send confirmation email:", emailErr);
+      }
     }
 
-    // 5. Lock slot as booked (in case it was only held).
+    // 6. Lock slot as booked (in case it was only held).
     if (slotId) {
       await getAdminDb().collection("slots").doc(slotId).update({
         status: "booked",
