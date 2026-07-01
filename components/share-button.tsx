@@ -6,12 +6,14 @@ interface ShareButtonProps {
   url?: string;
   title?: string;
   className?: string;
+  onShare?: () => void;
 }
 
 export function ShareButton({
   url,
   title = "Check this out",
   className = "inline-flex items-center gap-1.5 rounded-full bg-tattvam-purple-50 px-3 py-1.5 text-xs font-medium text-tattvam-purple-600 transition hover:bg-tattvam-purple-100",
+  onShare,
 }: ShareButtonProps) {
   const [copied, setCopied] = useState(false);
 
@@ -27,6 +29,7 @@ export function ShareButton({
           title,
           url: shareUrl,
         });
+        onShare?.();
         return;
       } catch {
         // Fall back to clipboard
@@ -36,6 +39,7 @@ export function ShareButton({
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopied(true);
+      onShare?.();
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Fallback for older browsers
@@ -46,6 +50,7 @@ export function ShareButton({
       document.execCommand("copy");
       document.body.removeChild(textArea);
       setCopied(true);
+      onShare?.();
       setTimeout(() => setCopied(false), 2000);
     }
   }, [url, title]);
