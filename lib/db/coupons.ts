@@ -30,7 +30,7 @@ export interface CouponRecord {
 }
 
 export async function createCoupon(
-  data: Omit<CouponRecord, "id" | "createdAt">
+  data: Omit<CouponRecord, "id" | "createdAt" | "usageCount">
 ): Promise<string> {
   const code = data.code.toUpperCase();
   await setDoc(doc(db, couponsCollection, code), {

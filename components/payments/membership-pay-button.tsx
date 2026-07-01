@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { LOGGER } from "@/lib/logger";
+import { PaymentFailedModal } from "./payment-failed-modal";
+import { CouponApplier, type AppliedCouponDetails } from "./coupon-applier";
 
 export interface MembershipPayButtonProps {
   membershipType: "FLOW" | "RISE" | "INNER CIRCLE";
@@ -10,8 +12,34 @@ export interface MembershipPayButtonProps {
   customerName: string;
   customerEmail: string;
   customerPhone?: string;
+  couponCode?: string;
   onSuccess?: (paymentId: string, razorpayPaymentId: string) => void;
   onFailure?: () => void;
+}
+
+const PRICE_MAP: Record<string, Record<number, number>> = {
+  FLOW: {
+    1: 2200,
+    3: 6000,
+    6: 11000,
+    12: 20000,
+  },
+  RISE: {
+    1: 4500,
+    3: 12500,
+    6: 24000,
+    12: 44000,
+  },
+  "INNER CIRCLE": {
+    1: 9000,
+    3: 25000,
+    6: 48000,
+    12: 88000,
+  },
+};
+
+function getMembershipPrice(type: string, months: number): number {
+  return PRICE_MAP[type]?.[months] ?? 0;
 }
 
 /**
@@ -24,10 +52,17 @@ export function MembershipPayButton({
   customerName,
   customerEmail,
   customerPhone,
+  couponCode: externalCouponCode,
   onSuccess,
   onFailure,
 }: MembershipPayButtonProps) {
   const [loading, setLoading] = useState(false);
+  const [showFailed, setShowFailed] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCouponDetails | null>(null);
+
+  const originalPrice = getMembershipPrice(membershipType, durationMonths);
+  const effectiveCouponCode = externalCouponCode || appliedCoupon?.couponCode;
+  const finalAmount = appliedCoupon?.finalAmount ?? originalPrice;
 
   const handlePay = async () => {
     if (loading) return;
@@ -43,6 +78,7 @@ export function MembershipPayButton({
           userId,
           customerName,
           customerEmail,
+          couponCode: effectiveCouponCode,
         }),
       });
 
@@ -100,12 +136,12 @@ export function MembershipPayButton({
               onSuccess?.(verifyData.paymentId, response.razorpay_payment_id);
             } else {
               LOGGER.error("Membership payment verification failed", { response: verifyData });
-              alert(verifyData.error || "Payment verification failed. Please contact support.");
+              setShowFailed(true);
               onFailure?.();
             }
           } catch (err) {
             LOGGER.error("Error verifying membership payment", { error: String(err) });
-            alert("Could not verify payment. Please contact support.");
+            setShowFailed(true);
             onFailure?.();
           } finally {
             setLoading(false);
@@ -116,7 +152,7 @@ export function MembershipPayButton({
       const rzp = new (window as unknown as { Razorpay: new (opts: typeof options) => { open: () => void; on: (event: string, cb: () => void) => void } }).Razorpay(options);
 
       rzp.on("payment.failed", () => {
-        alert("Payment failed. Please try again.");
+        setShowFailed(true);
         setLoading(false);
         onFailure?.();
       });
@@ -132,13 +168,37 @@ export function MembershipPayButton({
   };
 
   return (
-    <button
-      onClick={handlePay}
-      disabled={loading}
-      className="btn-primary w-full text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-      aria-busy={loading}
-    >
-      {loading ? "Processing…" : "Pay Now"}
-    </button>
+    <>
+      {!externalCouponCode && originalPrice > 0 && (
+        <div className="mb-3">
+          <CouponApplier
+            originalAmount={originalPrice}
+            itemType="membership"
+            itemId={membershipType}
+            membershipType={membershipType}
+            onApply={setAppliedCoupon}
+            onRemove={() => setAppliedCoupon(null)}
+          />
+        </div>
+      )}
+      <button
+        onClick={handlePay}
+        disabled={loading}
+        className="btn-primary w-full text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+        aria-busy={loading}
+      >
+        {loading ? "Processing…" : `Pay Now (₹${finalAmount.toLocaleString("en-IN")})`}
+      </button>
+      {showFailed && (
+        <PaymentFailedModal
+          itemName={`Project Ananda — ${membershipType}`}
+          onClose={() => setShowFailed(false)}
+          onRetry={() => {
+            setShowFailed(false);
+            handlePay();
+          }}
+        />
+      )}
+    </>
   );
 }

@@ -2,12 +2,14 @@ import { NextResponse } from "next/server";
 import { createRazorpayOrder } from "@/lib/payment";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { workshops as staticWorkshops } from "@/lib/data";
+import { validateCoupon } from "@/lib/coupon-validation";
 
 export interface CreateWorkshopOrderRequestBody {
   workshopId: string;
   userId: string;
   customerName?: string;
   customerEmail?: string;
+  couponCode?: string;
 }
 
 export interface CreateWorkshopOrderResponse {
@@ -15,6 +17,9 @@ export interface CreateWorkshopOrderResponse {
   amount: number; // in paise
   currency: string;
   paymentId: string;
+  originalAmount?: number; // in rupees
+  discountAmount?: number; // in rupees
+  couponCode?: string;
 }
 
 /**
@@ -25,7 +30,7 @@ export interface CreateWorkshopOrderResponse {
  */
 export async function POST(req: Request) {
   try {
-    const { workshopId, userId, customerName = "", customerEmail = "" }: CreateWorkshopOrderRequestBody = await req.json();
+    const { workshopId, userId, customerName = "", customerEmail = "", couponCode }: CreateWorkshopOrderRequestBody = await req.json();
 
     if (!workshopId || !userId) {
       return NextResponse.json({ error: "workshopId and userId are required" }, { status: 400 });
@@ -55,10 +60,32 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid workshop price" }, { status: 500 });
     }
 
-    // 2. Create Razorpay Order (amount is in paise).
+    // 2. Validate coupon if provided.
+    let finalAmountInRupees = priceInRupees;
+    let discountAmountInRupees = 0;
+    let appliedCouponCode: string | undefined;
+
+    if (couponCode && couponCode.trim()) {
+      const couponResult = await validateCoupon({
+        code: couponCode,
+        itemType: "workshop",
+        itemId: workshopId,
+        originalAmount: priceInRupees,
+      });
+
+      if (!couponResult.valid) {
+        return NextResponse.json({ error: couponResult.error || "Invalid coupon" }, { status: 400 });
+      }
+
+      finalAmountInRupees = couponResult.finalAmount ?? priceInRupees;
+      discountAmountInRupees = couponResult.discountAmount ?? 0;
+      appliedCouponCode = couponResult.couponCode;
+    }
+
+    // 3. Create Razorpay Order (amount is in paise).
     const receipt = `ws_${workshopId.slice(-20)}`.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 40);
     const order = await createRazorpayOrder({
-      amountInRupees: priceInRupees,
+      amountInRupees: finalAmountInRupees,
       receipt,
       notes: {
         workshopId,
@@ -66,10 +93,11 @@ export async function POST(req: Request) {
         customerName,
         customerEmail,
         itemType: "workshop",
+        couponCode: appliedCouponCode || "",
       },
     });
 
-    // 3. Persist PaymentRecord in Firestore (server-side).
+    // 4. Persist PaymentRecord in Firestore (server-side).
     const paymentRef = getAdminDb().collection("payments").doc();
     await paymentRef.set({
       userId,
@@ -80,6 +108,8 @@ export async function POST(req: Request) {
       itemType: "workshop",
       itemId: workshopId,
       itemTitle: title,
+      couponCode: appliedCouponCode || null,
+      discountAmount: discountAmountInRupees || null,
       createdAt: new Date(),
     });
 
@@ -88,6 +118,9 @@ export async function POST(req: Request) {
       amount: order.amount,
       currency: order.currency,
       paymentId: paymentRef.id,
+      originalAmount: priceInRupees,
+      discountAmount: discountAmountInRupees,
+      couponCode: appliedCouponCode,
     });
   } catch (err) {
     console.error("[create-workshop-order] error:", err);

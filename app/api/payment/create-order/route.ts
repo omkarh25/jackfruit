@@ -1,12 +1,14 @@
 import { NextResponse } from "next/server";
 import { createRazorpayOrder } from "@/lib/payment";
 import { getAdminDb } from "@/lib/firebase-admin";
+import { validateCoupon } from "@/lib/coupon-validation";
 
 export interface CreateOrderRequestBody {
   slotId: string;
   bookingId: string;
   userId: string;
   serviceTitle?: string;
+  couponCode?: string;
 }
 
 export interface CreateOrderResponse {
@@ -14,6 +16,9 @@ export interface CreateOrderResponse {
   amount: number; // in paise
   currency: string;
   paymentId: string;
+  originalAmount?: number; // in rupees
+  discountAmount?: number; // in rupees
+  couponCode?: string;
 }
 
 /**
@@ -24,7 +29,7 @@ export interface CreateOrderResponse {
  */
 export async function POST(req: Request) {
   try {
-    const { slotId, bookingId, userId, serviceTitle = "1:1 Consultation" }: CreateOrderRequestBody = await req.json();
+    const { slotId, bookingId, userId, serviceTitle = "1:1 Consultation", couponCode }: CreateOrderRequestBody = await req.json();
 
     if (!slotId || !bookingId || !userId) {
       return NextResponse.json({ error: "slotId, bookingId and userId are required" }, { status: 400 });
@@ -56,20 +61,43 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Invalid slot price" }, { status: 500 });
     }
 
-    // 2. Create Razorpay Order (amount is in paise).
+    // 2. Validate coupon if provided.
+    let finalAmountInRupees = priceInRupees;
+    let discountAmountInRupees = 0;
+    let appliedCouponCode: string | undefined;
+
+    if (couponCode && couponCode.trim()) {
+      const couponResult = await validateCoupon({
+        code: couponCode,
+        itemType: "consultation",
+        itemId: serviceTitle,
+        originalAmount: priceInRupees,
+      });
+
+      if (!couponResult.valid) {
+        return NextResponse.json({ error: couponResult.error || "Invalid coupon" }, { status: 400 });
+      }
+
+      finalAmountInRupees = couponResult.finalAmount ?? priceInRupees;
+      discountAmountInRupees = couponResult.discountAmount ?? 0;
+      appliedCouponCode = couponResult.couponCode;
+    }
+
+    // 3. Create Razorpay Order (amount is in paise).
     const receipt = `booking_${bookingId.slice(-20)}`.replace(/[^a-zA-Z0-9_]/g, "").slice(0, 40);
     const order = await createRazorpayOrder({
-      amountInRupees: priceInRupees,
+      amountInRupees: finalAmountInRupees,
       receipt,
       notes: {
         slotId,
         bookingId,
         userId,
-        itemType: "service",
+        itemType: "consultation",
+        couponCode: appliedCouponCode || "",
       },
     });
 
-    // 3. Persist PaymentRecord in Firestore (server-side).
+    // 4. Persist PaymentRecord in Firestore (server-side).
     const paymentRef = getAdminDb().collection("payments").doc();
     await paymentRef.set({
       userId,
@@ -77,9 +105,11 @@ export async function POST(req: Request) {
       amount: order.amount,
       currency: order.currency,
       status: "created",
-      itemType: "service",
+      itemType: "consultation",
       itemId: bookingId,
       itemTitle: serviceTitle,
+      couponCode: appliedCouponCode || null,
+      discountAmount: discountAmountInRupees || null,
       createdAt: new Date(),
     });
 
@@ -88,6 +118,9 @@ export async function POST(req: Request) {
       amount: order.amount,
       currency: order.currency,
       paymentId: paymentRef.id,
+      originalAmount: priceInRupees,
+      discountAmount: discountAmountInRupees,
+      couponCode: appliedCouponCode,
     });
   } catch (err) {
     console.error("[create-order] error:", err);

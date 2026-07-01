@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import Image from "next/image";
 import type { TestimonialItem } from "@/lib/types";
 
@@ -14,6 +14,7 @@ export function TestimonialCarousel({
   autoPlayInterval: _autoPlayInterval = 6000, // kept for API compatibility
 }: TestimonialCarouselProps) {
   const [current, setCurrent] = useState(0);
+  const videoRef = useRef<HTMLVideoElement | null>(null);
 
   const next = useCallback(() => {
     setCurrent((i) => (i + 1) % testimonials.length);
@@ -23,7 +24,31 @@ export function TestimonialCarousel({
     setCurrent((i) => (i - 1 + testimonials.length) % testimonials.length);
   }, [testimonials.length]);
 
-  // Auto-play removed — user navigates manually
+  // Auto-play video testimonials when they scroll into view.
+  useEffect(() => {
+    const video = videoRef.current;
+    if (!video) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            video.play().catch(() => {
+              // Autoplay may be blocked by browser policies; user can still press play.
+            });
+          } else {
+            video.pause();
+          }
+        });
+      },
+      { threshold: 0.5 }
+    );
+
+    observer.observe(video);
+    return () => observer.disconnect();
+  }, [current, testimonials]);
+
+  // Auto-play removed for carousel slides — user navigates manually.
 
   if (testimonials.length === 0) {
     return (
@@ -77,8 +102,11 @@ export function TestimonialCarousel({
           <div className="flex h-full flex-col items-center justify-between">
             <div className="mb-6 w-full">
               <video
+                ref={videoRef}
                 src={item.mediaUrl}
                 controls
+                muted
+                playsInline
                 className="mx-auto aspect-video w-full rounded-2xl"
                 preload="metadata"
               />

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { LOGGER } from "@/lib/logger";
+import { PaymentFailedModal } from "./payment-failed-modal";
+import { CouponApplier, type AppliedCouponDetails } from "./coupon-applier";
 
 export interface ConsultationPayButtonProps {
   slotId: string;
@@ -11,6 +13,8 @@ export interface ConsultationPayButtonProps {
   customerEmail: string;
   customerPhone?: string;
   serviceTitle?: string;
+  price?: number;
+  couponCode?: string;
   onSuccess?: (paymentId: string, razorpayPaymentId: string) => void;
   onFailure?: () => void;
 }
@@ -35,10 +39,16 @@ export function ConsultationPayButton({
   customerEmail,
   customerPhone,
   serviceTitle = "1:1 Consultation",
+  price,
+  couponCode: externalCouponCode,
   onSuccess,
   onFailure,
 }: ConsultationPayButtonProps) {
   const [loading, setLoading] = useState(false);
+  const [showFailed, setShowFailed] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCouponDetails | null>(null);
+
+  const effectiveCouponCode = externalCouponCode || appliedCoupon?.couponCode;
 
   const handlePay = async () => {
     if (loading) return;
@@ -54,6 +64,7 @@ export function ConsultationPayButton({
           bookingId,
           userId,
           serviceTitle,
+          couponCode: effectiveCouponCode,
         }),
       });
 
@@ -114,12 +125,12 @@ export function ConsultationPayButton({
               onSuccess?.(verifyData.paymentId, response.razorpay_payment_id);
             } else {
               LOGGER.error("Payment verification failed", { response: verifyData });
-              alert(verifyData.error || "Payment verification failed. Please contact support.");
+              setShowFailed(true);
               onFailure?.();
             }
           } catch (err) {
             LOGGER.error("Error verifying payment", { error: String(err) });
-            alert("Could not verify payment. Please contact support.");
+            setShowFailed(true);
             onFailure?.();
           } finally {
             setLoading(false);
@@ -130,7 +141,7 @@ export function ConsultationPayButton({
       const rzp = new (window as unknown as { Razorpay: new (opts: typeof options) => { open: () => void; on: (event: string, cb: () => void) => void } }).Razorpay(options);
 
       rzp.on("payment.failed", () => {
-        alert("Payment failed. Please try again.");
+        setShowFailed(true);
         setLoading(false);
         onFailure?.();
       });
@@ -145,14 +156,39 @@ export function ConsultationPayButton({
     }
   };
 
+  const finalAmount = appliedCoupon?.finalAmount ?? price;
+
   return (
-    <button
-      onClick={handlePay}
-      disabled={loading}
-      className="btn-primary w-full text-sm disabled:opacity-60 disabled:cursor-not-allowed"
-      aria-busy={loading}
-    >
-      {loading ? "Processing…" : "Pay Now"}
-    </button>
+    <>
+      {!externalCouponCode && price != null && price > 0 && (
+        <div className="mb-4">
+          <CouponApplier
+            originalAmount={price}
+            itemType="consultation"
+            itemId={serviceTitle}
+            onApply={setAppliedCoupon}
+            onRemove={() => setAppliedCoupon(null)}
+          />
+        </div>
+      )}
+      <button
+        onClick={handlePay}
+        disabled={loading}
+        className="btn-primary w-full text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+        aria-busy={loading}
+      >
+        {loading ? "Processing…" : finalAmount != null ? `Pay Now (₹${finalAmount})` : "Pay Now"}
+      </button>
+      {showFailed && (
+        <PaymentFailedModal
+          itemName={serviceTitle}
+          onClose={() => setShowFailed(false)}
+          onRetry={() => {
+            setShowFailed(false);
+            handlePay();
+          }}
+        />
+      )}
+    </>
   );
 }

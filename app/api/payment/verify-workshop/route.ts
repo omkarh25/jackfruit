@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { verifyRazorpaySignature } from "@/lib/payment";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { sendConfirmationEmail } from "@/lib/notification-helpers";
+import { incrementCouponUsageAdmin } from "@/lib/coupon-validation";
 
 export interface VerifyWorkshopPaymentRequestBody {
   razorpay_order_id: string;
@@ -65,12 +66,26 @@ export async function POST(req: Request) {
     const paymentData = paymentDoc.data();
 
     // 3. Update payment record.
-    await paymentDoc.ref.update({
+    const update: Record<string, unknown> = {
       status: "captured",
       razorpayPaymentId: razorpay_payment_id,
       razorpaySignature: razorpay_signature,
       updatedAt: new Date(),
-    });
+    };
+    if (paymentData?.couponCode && paymentData.discountAmount != null) {
+      update.couponCode = paymentData.couponCode;
+      update.discountAmount = paymentData.discountAmount;
+    }
+    await paymentDoc.ref.update(update);
+
+    // 3b. Track coupon usage.
+    if (paymentData?.couponCode) {
+      try {
+        await incrementCouponUsageAdmin(paymentData.couponCode as string);
+      } catch (couponErr) {
+        console.error("[verify-workshop] Failed to increment coupon usage:", couponErr);
+      }
+    }
 
     // 4. Send confirmation email
     try {

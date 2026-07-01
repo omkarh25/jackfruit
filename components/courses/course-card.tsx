@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ShareButton } from "@/components/share-button";
 import type { Course } from "@/lib/types";
 
 interface CourseCardProps {
@@ -30,9 +31,12 @@ export function CourseCard({ course, isPurchased }: CourseCardProps) {
         </div>
         <div className="mt-6 flex items-center justify-between">
           <span className="text-sm font-semibold text-jackfruit-leaf">{course.lessons} video lessons</span>
-          <Link href={`/courses/${course.slug}`} className="rounded-full bg-jackfruit-leaf px-5 py-3 text-sm font-bold text-white hover:bg-jackfruit-deep">
-            {isPurchased ? "Watch course" : "View details"}
-          </Link>
+          <div className="flex items-center gap-2">
+            <ShareButton url={`/courses/${course.slug}`} title={course.title} className="inline-flex items-center gap-1 rounded-full bg-jackfruit-gold/20 px-3 py-2 text-xs font-semibold text-jackfruit-deep transition hover:bg-jackfruit-gold/40" />
+            <Link href={`/courses/${course.slug}`} className="rounded-full bg-jackfruit-leaf px-5 py-3 text-sm font-bold text-white hover:bg-jackfruit-deep">
+              {isPurchased ? "Watch course" : "View details"}
+            </Link>
+          </div>
         </div>
       </div>
     </article>

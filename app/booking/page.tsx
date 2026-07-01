@@ -228,6 +228,7 @@ function BookingContent({ serviceName }: { serviceName: string }) {
               customerName={profile?.name || firebaseUser.displayName || ""}
               customerEmail={profile?.email || firebaseUser.email || ""}
               serviceTitle={serviceName}
+              price={selectedSlot.price}
               onSuccess={handlePaymentSuccess}
               onFailure={handlePaymentFailure}
             />

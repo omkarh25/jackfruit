@@ -4,12 +4,15 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth/auth-provider";
 import { LOGGER } from "@/lib/logger";
 import { PaymentSuccessModal } from "./payment-success-modal";
+import { PaymentFailedModal } from "./payment-failed-modal";
+import { CouponApplier, type AppliedCouponDetails } from "./coupon-applier";
 
 export interface WorkshopPayButtonProps {
   workshopId: string;
   workshopTitle: string;
   price: number;
   redirectUrl?: string;
+  couponCode?: string;
   className?: string;
   buttonText?: string;
 }
@@ -24,12 +27,17 @@ export function WorkshopPayButton({
   workshopTitle,
   price,
   redirectUrl,
+  couponCode: externalCouponCode,
   className = "btn-primary w-full text-center inline-flex justify-center items-center py-3.5 px-8 text-base font-semibold shadow-soft hover:shadow-medium transition",
   buttonText = "Reserve My Spot",
 }: WorkshopPayButtonProps) {
   const { firebaseUser, profile, loginWithGoogle } = useAuth();
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
+  const [showFailed, setShowFailed] = useState(false);
+  const [appliedCoupon, setAppliedCoupon] = useState<AppliedCouponDetails | null>(null);
+
+  const effectiveCouponCode = externalCouponCode || appliedCoupon?.couponCode;
 
   const handlePay = async () => {
     // 1. If not logged in, prompt sign in.
@@ -56,6 +64,7 @@ export function WorkshopPayButton({
           userId: firebaseUser.uid,
           customerName: profile.name || firebaseUser.displayName || "",
           customerEmail: profile.email || firebaseUser.email || "",
+          couponCode: effectiveCouponCode,
         }),
       });
 
@@ -114,11 +123,11 @@ export function WorkshopPayButton({
               setShowSuccess(true);
             } else {
               LOGGER.error("Workshop verification failed", { response: verifyData });
-              alert(verifyData.error || "Payment verification failed. Please contact support.");
+              setShowFailed(true);
             }
           } catch (err) {
             LOGGER.error("Error verifying workshop payment", { error: String(err) });
-            alert("Could not verify payment. Please contact support.");
+            setShowFailed(true);
           } finally {
             setLoading(false);
           }
@@ -128,7 +137,7 @@ export function WorkshopPayButton({
       const rzp = new (window as unknown as { Razorpay: new (opts: typeof options) => { open: () => void; on: (event: string, cb: () => void) => void } }).Razorpay(options);
 
       rzp.on("payment.failed", () => {
-        alert("Payment failed. Please try again.");
+        setShowFailed(true);
         setLoading(false);
       });
 
@@ -141,8 +150,21 @@ export function WorkshopPayButton({
     }
   };
 
+  const finalAmount = appliedCoupon?.finalAmount ?? price;
+
   return (
     <>
+      {!externalCouponCode && price > 0 && (
+        <div className="mb-4">
+          <CouponApplier
+            originalAmount={price}
+            itemType="workshop"
+            itemId={workshopId}
+            onApply={setAppliedCoupon}
+            onRemove={() => setAppliedCoupon(null)}
+          />
+        </div>
+      )}
       <button
         onClick={handlePay}
         disabled={loading}
@@ -153,7 +175,7 @@ export function WorkshopPayButton({
           ? "Sign In to Register"
           : loading
           ? "Processing…"
-          : `${buttonText} (₹${price})`}
+          : `${buttonText} (₹${finalAmount})`}
       </button>
 
       {showSuccess && (
@@ -164,6 +186,19 @@ export function WorkshopPayButton({
           onClose={() => {
             setShowSuccess(false);
             window.location.href = "/profile";
+          }}
+        />
+      )}
+      {showFailed && (
+        <PaymentFailedModal
+          itemName={workshopTitle}
+          onClose={() => {
+            setShowFailed(false);
+            window.location.href = "/profile";
+          }}
+          onRetry={() => {
+            setShowFailed(false);
+            handlePay();
           }}
         />
       )}

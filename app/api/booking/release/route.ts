@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
+import { sendPaymentFailedEmail } from "@/lib/notification-helpers";
 
 export interface ReleaseBookingRequestBody {
   slotId: string;
@@ -60,10 +61,35 @@ export async function POST(req: Request) {
     });
 
     if (bookingId) {
-      await getAdminDb().collection("bookings").doc(bookingId).update({
+      const bookingRef = getAdminDb().collection("bookings").doc(bookingId);
+      const bookingSnap = await bookingRef.get();
+      await bookingRef.update({
         status: "cancelled",
         updatedAt: new Date(),
       });
+
+      // Notify user about failed/abandoned payment.
+      try {
+        if (bookingSnap.exists) {
+          const bookingData = bookingSnap.data();
+          const userSnap = await getAdminDb().collection("users").doc(userId).get();
+          const userData = userSnap.exists ? userSnap.data() : null;
+          if (userData?.email) {
+            await sendPaymentFailedEmail({
+              itemType: "consultation",
+              itemTitle: bookingData?.serviceId || "1:1 Consultation",
+              itemId: bookingId,
+              amount: undefined,
+              bookingId,
+              customerName: userData?.name || bookingData?.clientName || "",
+              customerEmail: userData.email,
+              userId,
+            });
+          }
+        }
+      } catch (emailErr) {
+        console.error("[release-booking] Failed to send payment failed email:", emailErr);
+      }
     }
 
     return NextResponse.json<ReleaseBookingResponse>({ success: true });

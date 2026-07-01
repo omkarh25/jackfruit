@@ -23,11 +23,13 @@ export interface PaymentRecord {
   amount: number; // in paise (e.g., 55500 for ₹555)
   currency: string;
   status: "created" | "captured" | "failed" | "refunded";
-  itemType: "course" | "workshop" | "service";
+  itemType: "course" | "workshop" | "service" | "consultation" | "membership";
   itemId: string;
   itemTitle?: string;
   razorpayPaymentId?: string;
   razorpaySignature?: string;
+  couponCode?: string;
+  discountAmount?: number;
   createdAt?: Timestamp;
 }
 

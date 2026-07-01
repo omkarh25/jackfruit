@@ -13,14 +13,14 @@ export interface NotificationLog {
   userId: string;
   recipientEmail: string;
   type: "confirmation" | ReminderType;
-  itemType: "workshop" | "service" | "consultation";
+  itemType: "workshop" | "service" | "consultation" | "membership";
   itemId: string;
   itemTitle: string;
   sentAt: Date;
 }
 
 export interface EventDetails {
-  itemType: "workshop" | "service" | "consultation";
+  itemType: "workshop" | "service" | "consultation" | "membership";
   itemTitle: string;
   itemId: string;
   date: string;
@@ -31,6 +31,18 @@ export interface EventDetails {
   customerEmail: string;
   userId: string;
   amount?: number;
+}
+
+export interface PaymentFailedDetails {
+  itemType: "workshop" | "service" | "consultation" | "membership";
+  itemTitle: string;
+  itemId: string;
+  amount?: number;
+  bookingId?: string;
+  customerName: string;
+  customerEmail: string;
+  userId: string;
+  paymentLink?: string;
 }
 
 // ─── Logging ───
@@ -139,6 +151,23 @@ export function reminderEmailTemplate(details: EventDetails, minutes: number): s
   return baseTemplate(content);
 }
 
+export function paymentFailedEmailTemplate(details: PaymentFailedDetails): string {
+  const itemLabel = details.itemType === "consultation" ? "1:1 Consultation" : details.itemType;
+  const content = `
+    <p>Hi <strong>${details.customerName}</strong>,</p>
+    <p>We were unable to process your payment for <strong>${itemLabel}</strong> — <strong>${details.itemTitle}</strong>.</p>
+    <div class="details">
+      <p><strong>Service:</strong> ${details.itemTitle}</p>
+      ${details.amount ? `<p><strong>Amount:</strong> ₹${(details.amount / 100).toLocaleString("en-IN")}</p>` : ""}
+      ${details.bookingId ? `<p><strong>Reference:</strong> ${details.bookingId}</p>` : ""}
+    </div>
+    <p>Your registration has not yet been confirmed.</p>
+    ${details.paymentLink ? `<p>To complete your booking, please retry your payment using the link below:</p><div class="cta"><a href="${details.paymentLink}">Retry Payment</a></div>` : ""}
+    <p>If you continue to experience any issues, please contact <strong>Tattvam Wellness Center</strong> and we will be happy to assist you.</p>
+  `;
+  return baseTemplate(content);
+}
+
 // ─── Senders ───
 
 export async function sendConfirmationEmail(details: EventDetails): Promise<void> {
@@ -204,5 +233,24 @@ export async function sendReminderEmail(
     console.log(`[notification] ${reminderType} sent to ${details.customerEmail}`);
   } catch (err) {
     console.error(`[notification] Failed to send ${reminderType} email:`, err);
+  }
+}
+
+export async function sendPaymentFailedEmail(details: PaymentFailedDetails): Promise<void> {
+  try {
+    const html = paymentFailedEmailTemplate(details);
+    await sendEmail({
+      to: details.customerEmail,
+      subject: `Payment Failed for ${details.itemTitle}`,
+      html,
+    });
+    await sendEmail({
+      to: BUSINESS_EMAIL,
+      subject: `Payment Failed Notification — ${details.itemTitle}`,
+      html,
+    });
+    console.log(`[notification] Payment failed email sent to ${details.customerEmail} and admin`);
+  } catch (err) {
+    console.error("[notification] Failed to send payment failed email:", err);
   }
 }

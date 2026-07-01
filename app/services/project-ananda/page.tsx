@@ -1,9 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { FloatingOrbs, Reveal } from "@/components/animations";
 import { Navigation } from "@/components/app-shell/navigation";
-
-const WHATSAPP_LINK = "https://wa.me/916363606088";
 
 export default function ProjectAnandaPage() {
   return (
@@ -48,15 +47,13 @@ export default function ProjectAnandaPage() {
 
           <Reveal delay={900}>
             <div className="mt-10">
-              <a
-                href="https://rzp.io/rzp/projectananda99"
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href="/services/project-ananda/pricing"
                 className="btn-primary inline-flex"
               >
-                Start Now
+                View Plans
                 <span className="ml-2">→</span>
-              </a>
+              </Link>
             </div>
           </Reveal>
         </div>
@@ -87,6 +84,26 @@ export default function ProjectAnandaPage() {
               <p className="mt-4 font-medium text-tattvam-gold-600">
                 Every recommendation, session, and practice is personalized to you. Not one-size-fits-all.
               </p>
+            </div>
+          </Reveal>
+
+          <Reveal delay={400}>
+            <div className="mx-auto mt-10 max-w-3xl">
+              <div className="relative aspect-video overflow-hidden rounded-3xl bg-tattvam-purple-100 shadow-soft">
+                <video
+                  src="/assets/courses/project_ananda_intro.mp4"
+                  autoPlay
+                  muted
+                  loop
+                  playsInline
+                  controls
+                  className="h-full w-full object-cover"
+                  poster="/assets/homepage/founder.png"
+                />
+                <div className="absolute bottom-2 left-2 rounded-md bg-black/50 px-2 py-1 text-[10px] text-white">
+                  Intro video — replace /assets/courses/project_ananda_intro.mp4
+                </div>
+              </div>
             </div>
           </Reveal>
         </div>
@@ -328,6 +345,23 @@ export default function ProjectAnandaPage() {
               </p>
             </div>
           </Reveal>
+
+          <Reveal delay={200}>
+            <div className="mx-auto mt-10 max-w-3xl">
+              <div className="relative aspect-video overflow-hidden rounded-3xl bg-tattvam-purple-100 shadow-soft">
+                <video
+                  src="/assets/testimonials/project_ananda_testimonial.mp4"
+                  controls
+                  playsInline
+                  className="h-full w-full object-cover"
+                  poster="/assets/homepage/founder.png"
+                />
+                <div className="absolute bottom-2 left-2 rounded-md bg-black/50 px-2 py-1 text-[10px] text-white">
+                  Testimonial video — replace /assets/testimonials/project_ananda_testimonial.mp4
+                </div>
+              </div>
+            </div>
+          </Reveal>
         </div>
       </section>
 
@@ -405,15 +439,13 @@ export default function ProjectAnandaPage() {
 
           <Reveal delay={400}>
             <div className="mt-10">
-              <a
-                href="https://rzp.io/rzp/projectananda99"
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href="/services/project-ananda/pricing"
                 className="btn-primary inline-flex"
               >
-                Start Now
+                View Plans
                 <span className="ml-2">→</span>
-              </a>
+              </Link>
             </div>
           </Reveal>
         </div>

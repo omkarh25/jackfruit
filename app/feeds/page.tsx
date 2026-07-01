@@ -17,6 +17,7 @@ export default function FeedsPage() {
             description={item.description}
             badge={item.tag}
             meta={item.publishedAt}
+            shareUrl="/feeds"
           />
         ))}
       </div>

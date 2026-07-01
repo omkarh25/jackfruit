@@ -69,6 +69,7 @@ export default function WorkshopsPage() {
               description={workshop.description}
               badge={workshop.format}
               meta={workshop.date}
+              shareUrl={`/workshops/${workshop.slug}`}
             >
               <div className="flex flex-wrap gap-3">
                 <Link

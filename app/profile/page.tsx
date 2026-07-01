@@ -6,9 +6,10 @@ import { useAuth } from "@/components/auth/auth-provider";
 import { PageShell } from "@/components/app-shell/page-shell";
 import { getBookingsByUser, getBookingsByEmail, type BookingRecord } from "@/lib/db/bookings";
 import { getPaymentsByUser, type PaymentRecord } from "@/lib/db/payments";
-import { getWorkshopById } from "@/lib/db/workshops";
-import { getServiceById } from "@/lib/db/services";
+import { getWorkshopById, getWorkshopBySlug } from "@/lib/db/workshops";
+import { getServiceById, getServiceBySlug } from "@/lib/db/services";
 import { getCourseById } from "@/lib/db/courses";
+import { getBookingById } from "@/lib/db/bookings";
 
 interface EnrichedItem {
   id: string;
@@ -104,20 +105,44 @@ export default function ProfilePage() {
         let title = p.itemTitle || "Unknown";
         let date = "";
         let meetingLink: string | undefined;
+        let category: EnrichedItem["category"] = p.itemType as EnrichedItem["category"];
 
         try {
           if (p.itemType === "workshop" && p.itemId) {
-            const ws = await getWorkshopById(p.itemId);
+            let ws = await getWorkshopById(p.itemId);
+            if (!ws) {
+              ws = await getWorkshopBySlug(p.itemId);
+            }
             if (ws) {
               title = ws.title;
               date = ws.date;
               meetingLink = ws.whatsappLink;
             }
+          } else if (p.itemType === "consultation" && p.itemId) {
+            const booking = await getBookingById(p.itemId);
+            if (booking) {
+              title = booking.serviceId || "1:1 Consultation";
+              date = `${booking.slotDate} ${booking.slotTime}`;
+              meetingLink = booking.meetingLink;
+            }
+            category = "consultation";
           } else if (p.itemType === "service" && p.itemId) {
-            const svc = await getServiceById(p.itemId);
+            let svc = await getServiceById(p.itemId);
+            if (!svc) {
+              svc = await getServiceBySlug(p.itemId);
+            }
             if (svc) {
               title = svc.title;
               date = svc.date || "";
+            } else {
+              // Backwards compatibility: older consultation payments were stored as "service".
+              const booking = await getBookingById(p.itemId);
+              if (booking) {
+                title = booking.serviceId || "1:1 Consultation";
+                date = `${booking.slotDate} ${booking.slotTime}`;
+                meetingLink = booking.meetingLink;
+                category = "consultation";
+              }
             }
           } else if (p.itemType === "course" && p.itemId) {
             const course = await getCourseById(p.itemId);
@@ -137,7 +162,7 @@ export default function ProfilePage() {
           date: date || (p.createdAt ? new Date(p.createdAt.toDate()).toISOString() : ""),
           meetingLink,
           status: getItemStatus(start),
-          category: p.itemType as EnrichedItem["category"],
+          category,
         });
       }
 

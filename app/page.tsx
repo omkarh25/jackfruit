@@ -280,17 +280,25 @@ export default function HomePage() {
   useEffect(() => {
     getApprovedTestimonials()
       .then((records) => {
-        const mapped: TestimonialItem[] = records.map((r) => ({
-          id: r.id || "",
-          type: r.type || "text",
-          name: r.name,
-          role: r.role,
-          quote: r.quote,
-          mediaUrl: r.mediaUrl,
-          isFeatured: r.isFeatured ?? false,
-          isApproved: r.isApproved ?? true,
-          createdAt: r.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
-        }));
+        const mapped: TestimonialItem[] = records
+          .filter((r) => r.isApproved !== false)
+          .map((r) => ({
+            id: r.id || "",
+            type: r.type || "text",
+            name: r.name,
+            role: r.role,
+            quote: r.quote,
+            mediaUrl: r.mediaUrl,
+            isFeatured: r.isFeatured ?? false,
+            isApproved: r.isApproved ?? true,
+            createdAt: r.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
+          }))
+          // Show video testimonials first.
+          .sort((a, b) => {
+            if (a.type === "video" && b.type !== "video") return -1;
+            if (a.type !== "video" && b.type === "video") return 1;
+            return 0;
+          });
         setTestimonials(mapped);
         setTestimonialsLoaded(true);
       })
@@ -555,6 +563,30 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Top Quick Navigation */}
+      <div className="fixed top-[72px] left-0 right-0 z-40 hidden border-b border-tattvam-purple-100 bg-white/90 py-2 backdrop-blur-md sm:block">
+        <div className="mx-auto flex max-w-7xl items-center justify-center gap-4 px-6">
+          <Link
+            href="/services/project-ananda"
+            className="rounded-full bg-tattvam-purple-50 px-4 py-1.5 text-xs font-medium text-tattvam-purple-700 transition hover:bg-tattvam-purple-100"
+          >
+            Project Ananda
+          </Link>
+          <Link
+            href="/services/inner-power-camp"
+            className="rounded-full bg-tattvam-purple-50 px-4 py-1.5 text-xs font-medium text-tattvam-purple-700 transition hover:bg-tattvam-purple-100"
+          >
+            Inner Power Camp
+          </Link>
+          <Link
+            href="/booking"
+            className="rounded-full bg-tattvam-gold-100 px-4 py-1.5 text-xs font-medium text-tattvam-gold-800 transition hover:bg-tattvam-gold-200"
+          >
+            Book 1:1 Consultation
+          </Link>
+        </div>
+      </div>
+
       {/* Our Pillars Section */}
       <section className="section-padding">
         <div className="mx-auto max-w-6xl px-6">
@@ -564,7 +596,7 @@ export default function HomePage() {
                 What We Stand For
               </span>
               <h2 className="mt-6 font-serif text-4xl font-bold text-tattvam-purple-900 md:text-5xl">
-                The Four Pillars of{" "}
+                The Three Pillars of{" "}
                 <span className="gradient-text">Our Practice</span>
               </h2>
               <p className="mx-auto mt-4 max-w-2xl text-lg text-tattvam-purple-600/70">
@@ -574,31 +606,25 @@ export default function HomePage() {
             </div>
           </GSAPReveal>
 
-          <div ref={pillarsRef} className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
+          <div ref={pillarsRef} className="grid gap-8 md:grid-cols-3">
             {[
               {
-                icon: "✧",
-                title: "Emotional & Energy Healing",
+                icon: "🧠",
+                title: "Mind",
                 description:
-                  "Releasing ancestral blocks, healing inner wounds, and restoring energetic balance.",
+                  "Clarity to think, wisdom to choose, and resilience to navigate life's uncertainties.",
               },
               {
-                icon: "☽",
-                title: "Women Empowerment",
+                icon: "🌿",
+                title: "Body",
                 description:
-                  "Supporting women to rise into their fullest potential through healing and awakening.",
+                  "Strength to act, energy to thrive, and balance to sustain a healthy and fulfilling life.",
               },
               {
-                icon: "✦",
-                title: "Frequency Medicine",
+                icon: "💜",
+                title: "Emotions",
                 description:
-                  "Harnessing vibrational healing through ancient Indian wisdom and sound therapy.",
-              },
-              {
-                icon: "◈",
-                title: "Inner Child & Womb Healing",
-                description:
-                  "Deep trauma resolution through inner child work, past life regression, and womb energy activation.",
+                  "Awareness to understand, courage to feel, and stability to remain centered through life's highs and lows.",
               },
             ].map((pillar) => (
               <div
@@ -607,7 +633,7 @@ export default function HomePage() {
               >
                 <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-tattvam-purple-500/5 to-tattvam-gold-500/5 opacity-0 transition-opacity group-hover:opacity-100" />
                 <div className="relative">
-                  <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-tattvam-purple-100 to-tattvam-gold-100 text-3xl text-tattvam-purple-600">
+                  <div className="mb-6 inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-tattvam-purple-100 to-tattvam-gold-100 text-3xl">
                     <PulsatingAura
                       color="gold"
                       intensity="subtle"

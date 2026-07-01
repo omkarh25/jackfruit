@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createRazorpayOrder } from "@/lib/payment";
 import { getAdminDb } from "@/lib/firebase-admin";
+import { validateCoupon } from "@/lib/coupon-validation";
 
 export interface CreateMembershipOrderRequest {
   membershipType: "FLOW" | "RISE" | "INNER CIRCLE";
@@ -8,6 +9,7 @@ export interface CreateMembershipOrderRequest {
   userId: string;
   customerName: string;
   customerEmail: string;
+  couponCode?: string;
 }
 
 export interface CreateMembershipOrderResponse {
@@ -15,6 +17,9 @@ export interface CreateMembershipOrderResponse {
   amount: number;
   currency: string;
   paymentId: string;
+  originalAmount?: number;
+  discountAmount?: number;
+  couponCode?: string;
 }
 
 const PRICE_MAP: Record<string, Record<number, number>> = {
@@ -51,7 +56,7 @@ function getMembershipPrice(type: string, months: number): number {
 export async function POST(req: Request) {
   try {
     const body: CreateMembershipOrderRequest = await req.json();
-    const { membershipType, durationMonths, userId } = body;
+    const { membershipType, durationMonths, userId, couponCode } = body;
 
     if (!membershipType || !durationMonths || !userId) {
       return NextResponse.json(
@@ -68,17 +73,41 @@ export async function POST(req: Request) {
       );
     }
 
+    // Validate coupon if provided.
+    let finalAmountInRupees = priceInRupees;
+    let discountAmountInRupees = 0;
+    let appliedCouponCode: string | undefined;
+
+    if (couponCode && couponCode.trim()) {
+      const couponResult = await validateCoupon({
+        code: couponCode,
+        itemType: "membership",
+        itemId: membershipType,
+        originalAmount: priceInRupees,
+        membershipType,
+      });
+
+      if (!couponResult.valid) {
+        return NextResponse.json({ error: couponResult.error || "Invalid coupon" }, { status: 400 });
+      }
+
+      finalAmountInRupees = couponResult.finalAmount ?? priceInRupees;
+      discountAmountInRupees = couponResult.discountAmount ?? 0;
+      appliedCouponCode = couponResult.couponCode;
+    }
+
     const receipt = `pa_${membershipType.toLowerCase().replace(/\s/g, "-")}_${durationMonths}m_${Date.now()}`.slice(0, 40);
     const itemTitle = `Project Ananda — ${membershipType} — ${durationMonths} Month${durationMonths > 1 ? "s" : ""}`;
 
     const order = await createRazorpayOrder({
-      amountInRupees: priceInRupees,
+      amountInRupees: finalAmountInRupees,
       receipt,
       notes: {
         membershipType,
         durationMonths: String(durationMonths),
         userId,
-        itemType: "service",
+        itemType: "membership",
+        couponCode: appliedCouponCode || "",
       },
     });
 
@@ -90,9 +119,11 @@ export async function POST(req: Request) {
       amount: order.amount,
       currency: order.currency,
       status: "created",
-      itemType: "service",
+      itemType: "membership",
       itemId: `project-ananda-${membershipType.toLowerCase().replace(/\s/g, "-")}-${durationMonths}m`,
       itemTitle,
+      couponCode: appliedCouponCode || null,
+      discountAmount: discountAmountInRupees || null,
       createdAt: new Date(),
     });
 
@@ -101,6 +132,9 @@ export async function POST(req: Request) {
       amount: order.amount,
       currency: order.currency,
       paymentId: paymentRef.id,
+      originalAmount: priceInRupees,
+      discountAmount: discountAmountInRupees,
+      couponCode: appliedCouponCode,
     });
   } catch (err) {
     console.error("[membership/create-order] error:", err);

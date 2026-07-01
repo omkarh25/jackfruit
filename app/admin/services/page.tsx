@@ -432,13 +432,21 @@ export default function AdminServicesPage() {
                   <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
                     Price <span className="text-red-500">*</span>
                   </label>
-                  <input
-                    type="text"
-                    value={form.price}
-                    onChange={(e) => setForm({ ...form, price: e.target.value })}
-                    placeholder="e.g. ₹1,999"
-                    className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
-                  />
+                  <div className="relative">
+                    <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-tattvam-purple-500">
+                      ₹
+                    </span>
+                    <input
+                      type="text"
+                      value={form.price.replace(/^₹/, "")}
+                      onChange={(e) => {
+                        const val = e.target.value.replace(/[^0-9,]/g, "");
+                        setForm({ ...form, price: val ? `₹${val}` : "" });
+                      }}
+                      placeholder="1,999"
+                      className="w-full rounded-xl border border-tattvam-purple-200 py-2 pl-7 pr-4 text-sm focus:border-tattvam-purple-400 focus:outline-none"
+                    />
+                  </div>
                 </div>
               )}
               <div>

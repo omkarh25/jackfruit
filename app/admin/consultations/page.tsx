@@ -13,10 +13,11 @@ import {
 import {
   getAllSlots,
   createSlot,
+  updateSlot,
   deleteSlot,
   type SlotRecord,
 } from "@/lib/db/slots";
-import { getUserByEmail } from "@/lib/db/users";
+import { getUserByEmail, getAllUsers, type FirestoreUserProfile } from "@/lib/db/users";
 
 const emptyBooking: Omit<BookingRecord, "id" | "createdAt" | "updatedAt"> = {
   userId: "admin",
@@ -52,13 +53,18 @@ const emptySlot: Omit<SlotRecord, "id" | "createdAt" | "updatedAt"> = {
   status: "available",
 };
 
+const statusOrder: Record<string, number> = { upcoming: 0, completed: 1, cancelled: 2, no_show: 3 };
+
 export default function AdminConsultationsPage() {
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [slots, setSlots] = useState<SlotRecord[]>([]);
+  const [users, setUsers] = useState<FirestoreUserProfile[]>([]);
+  const [userSearch, setUserSearch] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [isSlotModalOpen, setIsSlotModalOpen] = useState(false);
   const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
   const [editingBooking, setEditingBooking] = useState<BookingRecord | null>(null);
+  const [editingSlot, setEditingSlot] = useState<SlotRecord | null>(null);
   const [bookingForm, setBookingForm] = useState(emptyBooking);
   const [slotForm, setSlotForm] = useState(emptySlot);
   const [search, setSearch] = useState("");
@@ -74,7 +80,7 @@ export default function AdminConsultationsPage() {
   async function loadData() {
     setIsLoading(true);
     try {
-      const [b, s] = await Promise.all([getAllBookings(), getAllSlots()]);
+      const [b, s, u] = await Promise.all([getAllBookings(), getAllSlots(), getAllUsers()]);
       setBookings(b);
       s.sort((a, b) => {
         const da = new Date(`${a.date}T${a.time}`);
@@ -82,6 +88,7 @@ export default function AdminConsultationsPage() {
         return da.getTime() - db.getTime();
       });
       setSlots(s);
+      setUsers(u);
       if (s.length > 0) {
         setSelectedDate(s[0].date);
       }
@@ -101,6 +108,7 @@ export default function AdminConsultationsPage() {
   function openAddBooking() {
     setEditingBooking(null);
     setBookingForm(emptyBooking);
+    setUserSearch("");
     setIsBookingModalOpen(true);
   }
 
@@ -120,6 +128,7 @@ export default function AdminConsultationsPage() {
       intakeNotes: booking.intakeNotes || "",
       internalNotes: booking.internalNotes || "",
     });
+    setUserSearch(booking.clientName || booking.clientEmail || "");
     setIsBookingModalOpen(true);
   }
 
@@ -176,13 +185,32 @@ export default function AdminConsultationsPage() {
     }
   }
 
+  function openAddSlot() {
+    setEditingSlot(null);
+    setSlotForm(emptySlot);
+    setIsSlotModalOpen(true);
+  }
+
+  function openEditSlot(slot: SlotRecord) {
+    setEditingSlot(slot);
+    setSlotForm({
+      date: slot.date,
+      time: slot.time,
+      duration: slot.duration,
+      price: slot.price,
+      meetingLink: slot.meetingLink || "",
+      status: slot.status,
+    });
+    setIsSlotModalOpen(true);
+  }
+
   function validateSlot(): string | null {
     if (!slotForm.date.trim()) return "Please enter a date.";
     if (!slotForm.time.trim()) return "Please enter a time.";
     if (!slotForm.duration.trim()) return "Please enter a duration.";
     if (slotForm.price <= 0) return "Please enter a valid price.";
-    // Check overlap
-    const sameDateSlots = slots.filter((s) => s.date === slotForm.date);
+    // Check overlap, excluding the slot currently being edited
+    const sameDateSlots = slots.filter((s) => s.date === slotForm.date && s.id !== editingSlot?.id);
     for (const s of sameDateSlots) {
       if (s.time === slotForm.time) {
         return `A slot already exists at ${slotForm.date} ${slotForm.time}.`;
@@ -198,14 +226,20 @@ export default function AdminConsultationsPage() {
       return;
     }
     try {
-      await createSlot(slotForm);
-      showMessage("Slot created successfully.", "success");
+      if (editingSlot?.id) {
+        await updateSlot(editingSlot.id, slotForm);
+        showMessage("Slot updated successfully.", "success");
+      } else {
+        await createSlot(slotForm);
+        showMessage("Slot created successfully.", "success");
+      }
       setIsSlotModalOpen(false);
       setSlotForm(emptySlot);
+      setEditingSlot(null);
       await loadData();
     } catch (e) {
       console.error(e);
-      showMessage("Failed to create slot. Please try again.", "error");
+      showMessage("Failed to save slot. Please try again.", "error");
     }
   }
 
@@ -221,27 +255,27 @@ export default function AdminConsultationsPage() {
     }
   }
 
-  const filteredBookings = bookings
-    .filter((b) => {
-      const matchesSearch =
-        b.clientName.toLowerCase().includes(search.toLowerCase()) ||
-        b.clientEmail.toLowerCase().includes(search.toLowerCase());
-      const matchesStatus = statusFilter === "All Status" || b.status === statusFilter.toLowerCase();
-      return matchesSearch && matchesStatus;
-    })
-    .sort((a, b) => {
-      // Sort by date (ascending), then by status (upcoming > completed > cancelled > no_show)
-      const parseSlotDate = (dateStr: string, timeStr: string) => {
-        const iso = `${dateStr}T${timeStr}`;
-        const d = new Date(iso);
-        return isNaN(d.getTime()) ? 0 : d.getTime();
-      };
-      const dateA = parseSlotDate(a.slotDate, a.slotTime);
-      const dateB = parseSlotDate(b.slotDate, b.slotTime);
-      if (dateA !== dateB) return dateA - dateB;
-      const statusOrder: Record<string, number> = { upcoming: 0, completed: 1, cancelled: 2, no_show: 3 };
-      return (statusOrder[a.status] ?? 4) - (statusOrder[b.status] ?? 4);
-    });
+  const filteredBookings = bookings.filter((b) => {
+    const matchesSearch =
+      b.clientName.toLowerCase().includes(search.toLowerCase()) ||
+      b.clientEmail.toLowerCase().includes(search.toLowerCase());
+    const matchesStatus = statusFilter === "All Status" || b.status === statusFilter.toLowerCase();
+    return matchesSearch && matchesStatus;
+  });
+
+  const groupedBookings = (() => {
+    const groups: Record<string, BookingRecord[]> = {};
+    for (const b of filteredBookings) {
+      if (!groups[b.slotDate]) groups[b.slotDate] = [];
+      groups[b.slotDate].push(b);
+    }
+    for (const date of Object.keys(groups)) {
+      groups[date].sort((a, b) => (statusOrder[a.status] ?? 4) - (statusOrder[b.status] ?? 4));
+    }
+    return Object.entries(groups)
+      .sort(([dateA], [dateB]) => new Date(dateA).getTime() - new Date(dateB).getTime())
+      .map(([date, items]) => ({ date, items }));
+  })();
 
   const upcomingCount = bookings.filter((b) => b.status === "upcoming").length;
   const completedCount = bookings.filter((b) => b.status === "completed").length;
@@ -289,7 +323,7 @@ export default function AdminConsultationsPage() {
       <div className="mb-8 rounded-2xl bg-white p-6 shadow-soft">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="font-serif text-xl font-bold text-tattvam-purple-900">Availability Slots</h2>
-          <button onClick={() => setIsSlotModalOpen(true)} className="btn-primary text-sm">
+          <button onClick={openAddSlot} className="btn-primary text-sm">
             ➕ Add Slot
           </button>
         </div>
@@ -346,14 +380,22 @@ export default function AdminConsultationsPage() {
                       Link: {slot.meetingLink}
                     </p>
                   )}
-                  {slot.status === "available" && (
+                  <div className="mt-2 flex flex-wrap gap-2">
                     <button
-                      onClick={() => handleDeleteSlot(slot.id!)}
-                      className="mt-2 rounded-lg bg-red-50 px-2 py-1 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                      onClick={() => openEditSlot(slot)}
+                      className="rounded-lg bg-tattvam-purple-100 px-2 py-1 text-xs font-medium text-tattvam-purple-600 transition hover:bg-tattvam-purple-200"
                     >
-                      Delete
+                      Edit
                     </button>
-                  )}
+                    {slot.status === "available" && (
+                      <button
+                        onClick={() => handleDeleteSlot(slot.id!)}
+                        className="rounded-lg bg-red-50 px-2 py-1 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                      >
+                        Delete
+                      </button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -413,68 +455,83 @@ export default function AdminConsultationsPage() {
                 <th className="px-6 py-4 text-sm font-semibold text-tattvam-purple-800">Actions</th>
               </tr>
             </thead>
-            <tbody>
-              {filteredBookings.map((booking) => (
-                <tr
-                  key={booking.id}
-                  className="border-b border-tattvam-purple-50 transition hover:bg-tattvam-purple-50/50"
-                >
-                  <td className="px-6 py-4">
-                    <p className="font-medium text-tattvam-purple-800">{booking.clientName}</p>
-                    <p className="text-sm text-tattvam-purple-500">{booking.clientEmail}</p>
-                    {booking.clientPhone && (
-                      <p className="text-sm text-tattvam-purple-400">{booking.clientPhone}</p>
-                    )}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-tattvam-purple-600">{booking.serviceId}</td>
-                  <td className="px-6 py-4 text-sm text-tattvam-purple-600">
-                    {booking.slotDate} at {booking.slotTime}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-tattvam-purple-600">
-                    {booking.duration || "—"}
-                  </td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`rounded-full px-3 py-1 text-xs font-bold ${
-                        booking.status === "upcoming"
-                          ? "bg-amber-100 text-amber-700"
-                          : booking.status === "completed"
-                          ? "bg-green-100 text-green-700"
-                          : "bg-red-100 text-red-700"
-                      }`}
-                    >
-                      {booking.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => openEditBooking(booking)}
-                        className="rounded-lg bg-tattvam-purple-100 px-3 py-1.5 text-xs font-medium text-tattvam-purple-600 transition hover:bg-tattvam-purple-200"
-                      >
-                        Edit
-                      </button>
-                      {booking.status !== "cancelled" && (
-                        <button
-                          onClick={() => handleCancelBooking(booking.id!)}
-                          className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
-                        >
-                          Cancel
-                        </button>
-                      )}
-                      {booking.status === "cancelled" && (
-                        <button
-                          onClick={() => handleDeleteBooking(booking.id!)}
-                          className="rounded-lg bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-100"
-                        >
-                          Delete
-                        </button>
-                      )}
-                    </div>
+            {groupedBookings.map(({ date, items }) => (
+              <tbody key={date}>
+                <tr className="border-b border-tattvam-purple-100 bg-tattvam-purple-100/70">
+                  <td
+                    colSpan={6}
+                    className="px-6 py-2 text-sm font-semibold text-tattvam-purple-800"
+                  >
+                    {new Date(date).toLocaleDateString(undefined, {
+                      weekday: "long",
+                      year: "numeric",
+                      month: "long",
+                      day: "numeric",
+                    })}
                   </td>
                 </tr>
-              ))}
-            </tbody>
+                {items.map((booking) => (
+                  <tr
+                    key={booking.id}
+                    className="border-b border-tattvam-purple-50 transition hover:bg-tattvam-purple-50/50"
+                  >
+                    <td className="px-6 py-4">
+                      <p className="font-medium text-tattvam-purple-800">{booking.clientName}</p>
+                      <p className="text-sm text-tattvam-purple-500">{booking.clientEmail}</p>
+                      {booking.clientPhone && (
+                        <p className="text-sm text-tattvam-purple-400">{booking.clientPhone}</p>
+                      )}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-tattvam-purple-600">{booking.serviceId}</td>
+                    <td className="px-6 py-4 text-sm text-tattvam-purple-600">
+                      {booking.slotDate} at {booking.slotTime}
+                    </td>
+                    <td className="px-6 py-4 text-sm text-tattvam-purple-600">
+                      {booking.duration || "—"}
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`rounded-full px-3 py-1 text-xs font-bold ${
+                          booking.status === "upcoming"
+                            ? "bg-amber-100 text-amber-700"
+                            : booking.status === "completed"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {booking.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => openEditBooking(booking)}
+                          className="rounded-lg bg-tattvam-purple-100 px-3 py-1.5 text-xs font-medium text-tattvam-purple-600 transition hover:bg-tattvam-purple-200"
+                        >
+                          Edit
+                        </button>
+                        {booking.status !== "cancelled" && (
+                          <button
+                            onClick={() => handleCancelBooking(booking.id!)}
+                            className="rounded-lg bg-red-50 px-3 py-1.5 text-xs font-medium text-red-600 transition hover:bg-red-100"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                        {booking.status === "cancelled" && (
+                          <button
+                            onClick={() => handleDeleteBooking(booking.id!)}
+                            className="rounded-lg bg-gray-50 px-3 py-1.5 text-xs font-medium text-gray-600 transition hover:bg-gray-100"
+                          >
+                            Delete
+                          </button>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            ))}
           </table>
         </div>
       )}
@@ -483,7 +540,9 @@ export default function AdminConsultationsPage() {
       {isSlotModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
           <div className="max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
-            <h2 className="font-serif text-2xl font-bold text-tattvam-purple-900">Add Availability Slot</h2>
+            <h2 className="font-serif text-2xl font-bold text-tattvam-purple-900">
+              {editingSlot ? "Edit Availability Slot" : "Add Availability Slot"}
+            </h2>
             <div className="mt-6 grid gap-4">
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
@@ -550,13 +609,17 @@ export default function AdminConsultationsPage() {
             </div>
             <div className="mt-6 flex justify-end gap-3">
               <button
-                onClick={() => setIsSlotModalOpen(false)}
+                onClick={() => {
+                  setIsSlotModalOpen(false);
+                  setEditingSlot(null);
+                  setSlotForm(emptySlot);
+                }}
                 className="rounded-xl border border-tattvam-purple-200 px-5 py-2.5 text-sm font-medium text-tattvam-purple-600 transition hover:bg-tattvam-purple-50"
               >
                 Cancel
               </button>
               <button onClick={handleSaveSlot} className="btn-primary text-sm">
-                Create Slot
+                {editingSlot ? "Save Changes" : "Create Slot"}
               </button>
             </div>
           </div>
@@ -571,6 +634,42 @@ export default function AdminConsultationsPage() {
               {editingBooking ? "Edit Booking" : "Add Booking"}
             </h2>
             <div className="mt-6 grid gap-4">
+              <div>
+                <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
+                  Registered Client (optional)
+                </label>
+                <input
+                  list="registered-users"
+                  type="text"
+                  value={userSearch}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setUserSearch(value);
+                    const user = users.find((u) => u.email === value || u.name === value);
+                    if (user) {
+                      setBookingForm({
+                        ...bookingForm,
+                        userId: user.uid,
+                        clientName: user.name || "",
+                        clientEmail: user.email || "",
+                        clientPhone: user.phone || "",
+                      });
+                    }
+                  }}
+                  placeholder="Search by name or email..."
+                  className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
+                />
+                <datalist id="registered-users">
+                  {users.map((u) => (
+                    <option key={u.uid} value={u.email}>
+                      {u.name}
+                    </option>
+                  ))}
+                </datalist>
+                <p className="mt-1 text-xs text-tattvam-purple-500">
+                  Selecting a user prefills the fields below. You can still edit them manually.
+                </p>
+              </div>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                 <div>
                   <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Client Name</label>

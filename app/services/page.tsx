@@ -60,6 +60,7 @@ export default function ServicesPage() {
               description={service.description}
               badge={service.price}
               meta={service.duration}
+              shareUrl={`/services/${service.slug}`}
             >
               <ul className="mb-5 list-inside list-disc space-y-2 text-sm text-jackfruit-deep/70">
                 {(service.outcomes || []).map((outcome) => (
