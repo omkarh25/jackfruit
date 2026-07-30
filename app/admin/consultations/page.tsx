@@ -256,6 +256,8 @@ export default function AdminConsultationsPage() {
   }
 
   const filteredBookings = bookings.filter((b) => {
+    // Hide transient pre-payment bookings; the sweep cancels them after 15 min.
+    if (b.status === "pending") return false;
     const matchesSearch =
       b.clientName.toLowerCase().includes(search.toLowerCase()) ||
       b.clientEmail.toLowerCase().includes(search.toLowerCase());
@@ -273,7 +275,7 @@ export default function AdminConsultationsPage() {
       groups[date].sort((a, b) => (statusOrder[a.status] ?? 4) - (statusOrder[b.status] ?? 4));
     }
     return Object.entries(groups)
-      .sort(([dateA], [dateB]) => new Date(dateA).getTime() - new Date(dateB).getTime())
+      .sort(([dateA], [dateB]) => new Date(dateB).getTime() - new Date(dateA).getTime())
       .map(([date, items]) => ({ date, items }));
   })();
 

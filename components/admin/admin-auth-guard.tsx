@@ -6,7 +6,6 @@ import { useAuth } from "@/components/auth/auth-provider";
 
 const ADMIN_ONLY_PATHS = [
   "/admin",
-  "/admin/workshops",
   "/admin/services",
   "/admin/courses",
   "/admin/payments",

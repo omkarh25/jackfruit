@@ -92,7 +92,7 @@ export async function saveAttendanceBulk(
           changedByAdminId: admin.uid,
           changedByAdminName: admin.name,
           changedDateTime: now,
-          remarks: record.remarks || undefined,
+          remarks: record.remarks ?? null,
         });
       }
     } else {
@@ -120,7 +120,7 @@ export async function saveAttendanceBulk(
         changedByAdminId: admin.uid,
         changedByAdminName: admin.name,
         changedDateTime: now,
-        remarks: record.remarks || undefined,
+        remarks: record.remarks ?? null,
       });
     }
   }
@@ -162,7 +162,7 @@ export async function updateAttendance(
       changedByAdminId: admin.uid,
       changedByAdminName: admin.name,
       changedDateTime: now,
-      remarks: input.remarks || undefined,
+      remarks: input.remarks ?? null,
     });
   }
 

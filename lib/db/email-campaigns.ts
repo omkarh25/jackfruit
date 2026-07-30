@@ -68,10 +68,11 @@ export async function createEmailCampaign(
   const batch = db.batch();
   for (const recipient of recipients) {
     const recipientRef = campaignRef.collection("recipients").doc();
-    batch.set(recipientRef, {
-      ...recipient,
-      sentAt: now,
-    });
+    // Firestore rejects undefined values — strip them before writing.
+    const clean = Object.fromEntries(
+      Object.entries({ ...recipient, sentAt: now }).filter(([, v]) => v !== undefined)
+    );
+    batch.set(recipientRef, clean);
   }
   await batch.commit();
 

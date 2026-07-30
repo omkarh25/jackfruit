@@ -84,8 +84,15 @@ export async function GET(req: Request) {
     }
 
     for (const workshopId of Array.from(workshopIds)) {
-      const wsSnap = await db.collection("workshops").doc(workshopId).get();
-      const wsData = wsSnap.exists ? wsSnap.data() : null;
+      // Services first (workshops were merged into services), legacy fallback.
+      let wsData: FirebaseFirestore.DocumentData | null | undefined = null;
+      const svcSnap = await db.collection("services").doc(workshopId).get();
+      if (svcSnap.exists) {
+        wsData = svcSnap.data();
+      } else {
+        const wsSnap = await db.collection("workshops").doc(workshopId).get();
+        wsData = wsSnap.exists ? wsSnap.data() : null;
+      }
       const title = wsData?.title || "Unknown Workshop";
       const parsed = parseWorkshopDate(wsData?.date || "");
 

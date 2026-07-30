@@ -26,10 +26,21 @@ export interface ServiceRecord {
   date?: string;
   dates?: string[];
   enquiryMode?: boolean;
-  category?: "Healing" | "Coaching" | "Therapy";
+  category?: "Healing" | "Coaching" | "Therapy" | "Workshop";
   outcomes: string[];
   isVisible: boolean;
   paymentRedirectUrl?: string;
+  // ─── Workshop-style fields (workshops were merged into services) ───
+  kind?: "service" | "workshop";
+  longDescription?: string;
+  format?: "Live Zoom" | "Recording" | "Offline";
+  location?: "Online" | "Offline";
+  imageUrl?: string;
+  whatsappLink?: string;
+  venueLink?: string;
+  maxParticipants?: number;
+  registrationsEnabled?: boolean;
+  legacyWorkshopId?: string;
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -37,8 +48,12 @@ export interface ServiceRecord {
 export async function createService(
   data: Omit<ServiceRecord, "id" | "createdAt" | "updatedAt">
 ): Promise<string> {
+  // Firestore rejects undefined values — strip them before writing.
+  const clean = Object.fromEntries(
+    Object.entries(data).filter(([, v]) => v !== undefined)
+  );
   const ref = await addDoc(collection(db, servicesCollection), {
-    ...data,
+    ...clean,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -60,8 +75,12 @@ export async function updateService(
   id: string,
   data: Partial<Omit<ServiceRecord, "id" | "createdAt">>
 ): Promise<void> {
+  // Firestore rejects undefined values — strip them before writing.
+  const clean = Object.fromEntries(
+    Object.entries(data).filter(([, v]) => v !== undefined)
+  );
   await updateDoc(doc(db, servicesCollection, id), {
-    ...data,
+    ...clean,
     updatedAt: serverTimestamp(),
   });
 }

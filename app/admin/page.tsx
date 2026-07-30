@@ -3,14 +3,12 @@
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { StatCard } from "@/components/admin/stat-card";
-import { getAllWorkshops, type WorkshopRecord } from "@/lib/db/workshops";
 import { getAllServices, type ServiceRecord } from "@/lib/db/services";
 import { getAllBookings, type BookingRecord } from "@/lib/db/bookings";
 import { getAllPayments, type PaymentRecord } from "@/lib/db/payments";
 import { getAvailableSlots, type SlotRecord } from "@/lib/db/slots";
 
 export default function AdminDashboardPage() {
-  const [workshops, setWorkshops] = useState<WorkshopRecord[]>([]);
   const [services, setServices] = useState<ServiceRecord[]>([]);
   const [bookings, setBookings] = useState<BookingRecord[]>([]);
   const [payments, setPayments] = useState<PaymentRecord[]>([]);
@@ -20,14 +18,12 @@ export default function AdminDashboardPage() {
   useEffect(() => {
     async function loadData() {
       try {
-        const [w, s, b, p, availableSlots] = await Promise.all([
-          getAllWorkshops(),
+        const [s, b, p, availableSlots] = await Promise.all([
           getAllServices(),
           getAllBookings(),
           getAllPayments(),
           getAvailableSlots(),
         ]);
-        setWorkshops(w);
         setServices(s);
         setBookings(b);
         setPayments(p);
@@ -51,7 +47,12 @@ export default function AdminDashboardPage() {
     .filter((p) => p.status === "captured")
     .reduce((sum, p) => sum + (p.amount || 0), 0);
 
-  const liveWorkshops = workshops.filter((w) => w.format === "Live Zoom" || w.format === "Offline");
+  const liveWorkshops = services.filter(
+    (s) =>
+      s.kind === "workshop" &&
+      (s.format === "Live Zoom" || s.format === "Offline") &&
+      s.isVisible !== false
+  );
   const upcomingBookings = bookings.filter((b) => b.status === "upcoming");
   const activeServices = services.filter((s) => s.isVisible !== false);
 
@@ -114,7 +115,7 @@ export default function AdminDashboardPage() {
                         <p className="text-sm text-tattvam-purple-500">{workshop.date}</p>
                       </div>
                       <span className="rounded-full bg-tattvam-gold-100 px-3 py-1 text-xs font-bold text-tattvam-gold-700">
-                        ₹{workshop.price}
+                        {workshop.price}
                       </span>
                     </div>
                   ))
@@ -197,7 +198,6 @@ export default function AdminDashboardPage() {
               </h2>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 {[
-                  { label: "Add Workshop", href: "/admin/workshops", icon: "➕" },
                   { label: "Add Service", href: "/admin/services", icon: "✨" },
                   { label: "View Bookings", href: "/admin/consultations", icon: "📅" },
                   { label: "Manage Users", href: "/admin/users", icon: "👥" },

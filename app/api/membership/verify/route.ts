@@ -87,6 +87,50 @@ export async function POST(req: Request) {
       }
     }
 
+    // 3c. Create or extend the user's membership record.
+    try {
+      const userId = paymentData?.userId as string | undefined;
+      const tier = paymentData?.membershipTier as string | undefined;
+      const durationMonths = Number(paymentData?.durationMonths) || 0;
+
+      if (userId && tier && durationMonths > 0) {
+        const db = getAdminDb();
+        const now = new Date();
+
+        // Renewal extends from max(now, current expiry of an active membership).
+        const existingSnap = await db
+          .collection("memberships")
+          .where("userId", "==", userId)
+          .get();
+
+        let baseDate = now;
+        for (const doc of existingSnap.docs) {
+          const exp = new Date(doc.data().expiryDate);
+          if (!isNaN(exp.getTime()) && exp > baseDate) {
+            baseDate = exp;
+          }
+        }
+
+        const expiryDate = new Date(baseDate);
+        expiryDate.setMonth(expiryDate.getMonth() + durationMonths);
+
+        await db.collection("memberships").add({
+          userId,
+          tier,
+          mode: paymentData?.mode === "online" ? "online" : "offline",
+          durationMonths,
+          startDate: baseDate.toISOString(),
+          expiryDate: expiryDate.toISOString(),
+          status: "active",
+          paymentId: paymentDoc.id,
+          createdAt: now,
+          updatedAt: now,
+        });
+      }
+    } catch (membershipErr) {
+      console.error("[membership/verify] Failed to create membership record:", membershipErr);
+    }
+
     // 4. Send confirmation email
     try {
       const userId = paymentData?.userId;

@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { FloatingOrbs, Reveal } from "@/components/animations";
 import { Navigation } from "@/components/app-shell/navigation";
+import { useServiceEnquiry } from "@/lib/hooks/use-service-enquiry";
 
 const WHATSAPP_LINK = "https://wa.me/916363606088";
 
@@ -59,6 +60,8 @@ const experiences = [
 ];
 
 export default function InnerPowerCampPage() {
+  const { enquiryMode, whatsappLink } = useServiceEnquiry("inner-power-camp");
+
   return (
     <div className="relative overflow-x-hidden bg-tattvam-neutral-50">
       <Navigation />
@@ -103,15 +106,22 @@ export default function InnerPowerCampPage() {
 
               <Reveal delay={900}>
                 <div className="mt-10">
-                  <a
-                    href={WHATSAPP_LINK}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-primary inline-flex"
-                  >
-                    Enquire Now
-                    <span className="ml-2">→</span>
-                  </a>
+                  {enquiryMode ? (
+                    <a
+                      href={whatsappLink || WHATSAPP_LINK}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-primary inline-flex"
+                    >
+                      Enquire Now
+                      <span className="ml-2">→</span>
+                    </a>
+                  ) : (
+                    <a href="/booking?service=Inner%20Power%20Camp" className="btn-primary inline-flex">
+                      Book a Slot
+                      <span className="ml-2">→</span>
+                    </a>
+                  )}
                 </div>
               </Reveal>
             </div>
@@ -384,15 +394,22 @@ export default function InnerPowerCampPage() {
 
           <Reveal delay={400}>
             <div className="mt-10">
-              <a
-                href={WHATSAPP_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary inline-flex"
-              >
-                Enquire Now
-                <span className="ml-2">→</span>
-              </a>
+              {enquiryMode ? (
+                <a
+                  href={whatsappLink || WHATSAPP_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary inline-flex"
+                >
+                  Enquire Now
+                  <span className="ml-2">→</span>
+                </a>
+              ) : (
+                <a href="/booking?service=Inner%20Power%20Camp" className="btn-primary inline-flex">
+                  Book a Slot
+                  <span className="ml-2">→</span>
+                </a>
+              )}
             </div>
           </Reveal>
         </div>

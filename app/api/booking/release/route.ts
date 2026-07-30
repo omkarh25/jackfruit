@@ -57,6 +57,7 @@ export async function POST(req: Request) {
     await slotRef.update({
       status: "available",
       bookedBy: null,
+      heldAt: null,
       updatedAt: new Date(),
     });
 

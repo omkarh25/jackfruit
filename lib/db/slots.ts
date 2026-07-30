@@ -25,6 +25,7 @@ export interface SlotRecord {
   meetingLink?: string;
   status: "available" | "booked" | "held";
   bookedBy?: string; // userId
+  heldAt?: Timestamp | null; // set when the slot is held; used for 15-min expiry
   createdAt?: Timestamp;
   updatedAt?: Timestamp;
 }
@@ -86,6 +87,7 @@ export async function holdSlot(id: string, userId: string): Promise<void> {
   await updateDoc(doc(db, slotsCollection, id), {
     status: "held",
     bookedBy: userId,
+    heldAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
 }
@@ -94,6 +96,7 @@ export async function bookSlot(id: string, userId: string): Promise<void> {
   await updateDoc(doc(db, slotsCollection, id), {
     status: "booked",
     bookedBy: userId,
+    heldAt: null,
     updatedAt: serverTimestamp(),
   });
 }
@@ -102,6 +105,7 @@ export async function releaseSlot(id: string): Promise<void> {
   await updateDoc(doc(db, slotsCollection, id), {
     status: "available",
     bookedBy: null,
+    heldAt: null,
     updatedAt: serverTimestamp(),
   });
 }

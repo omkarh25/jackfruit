@@ -48,10 +48,10 @@ export default function ProjectAnandaPage() {
           <Reveal delay={900}>
             <div className="mt-10">
               <Link
-                href="/services/project-ananda/pricing"
+                href="#ananda-trial"
                 className="btn-primary inline-flex"
               >
-                View Plans
+                Start Now
                 <span className="ml-2">→</span>
               </Link>
             </div>
@@ -439,13 +439,15 @@ export default function ProjectAnandaPage() {
 
           <Reveal delay={400}>
             <div className="mt-10">
-              <Link
-                href="/services/project-ananda/pricing"
+              <a
+                href="https://pages.razorpay.com/projectananda99"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="btn-primary inline-flex"
               >
-                View Plans
+                Start Now
                 <span className="ml-2">→</span>
-              </Link>
+              </a>
             </div>
           </Reveal>
         </div>

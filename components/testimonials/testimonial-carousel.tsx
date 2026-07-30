@@ -62,8 +62,12 @@ export function TestimonialCarousel({
 
   return (
     <div className="relative mx-auto max-w-4xl">
-      {/* Card */}
-      <div className="relative min-h-[320px] overflow-hidden rounded-3xl bg-white/5 p-8 backdrop-blur-sm md:p-12">
+      {/* Card — tighter padding on mobile for video slides so the video is larger */}
+      <div
+        className={`relative min-h-[320px] overflow-hidden rounded-3xl bg-white/5 backdrop-blur-sm ${
+          item.type === "video" ? "p-3 sm:p-8 md:p-12" : "p-8 md:p-12"
+        }`}
+      >
         {item.type === "text" && (
           <div className="flex h-full flex-col justify-between">
             <div>
@@ -105,6 +109,7 @@ export function TestimonialCarousel({
                 ref={videoRef}
                 src={item.mediaUrl}
                 controls
+                autoPlay
                 muted
                 playsInline
                 className="mx-auto aspect-video w-full rounded-2xl"

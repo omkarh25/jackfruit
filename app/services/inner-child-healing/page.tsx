@@ -3,8 +3,11 @@
 import Link from "next/link";
 import { FloatingOrbs, Reveal } from "@/components/animations";
 import { Navigation } from "@/components/app-shell/navigation";
+import { useServiceEnquiry } from "@/lib/hooks/use-service-enquiry";
 
 export default function InnerChildHealingPage() {
+  const { enquiryMode, whatsappLink } = useServiceEnquiry("inner-child-healing");
+
   return (
     <div className="relative overflow-x-hidden bg-tattvam-neutral-50">
       <Navigation />
@@ -29,11 +32,23 @@ export default function InnerChildHealingPage() {
           </Reveal>
 
           <Reveal delay={500}>
-            <div className="mt-10">
-              <Link href="/booking" className="btn-primary inline-flex">
-                Book a Session
-                <span className="ml-2">→</span>
-              </Link>
+            <div className="mt-10 flex flex-col items-center justify-center gap-4 sm:flex-row">
+              {enquiryMode ? (
+                <a
+                  href={whatsappLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary inline-flex"
+                >
+                  WhatsApp Enquiry
+                  <span className="ml-2">→</span>
+                </a>
+              ) : (
+                <Link href="/booking" className="btn-primary inline-flex">
+                  Book a Session
+                  <span className="ml-2">→</span>
+                </Link>
+              )}
             </div>
           </Reveal>
         </div>

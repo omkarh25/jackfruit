@@ -2,12 +2,18 @@
 
 import { useState } from "react";
 import { LOGGER } from "@/lib/logger";
+import {
+  getMembershipPrice,
+  type MembershipMode,
+  type MembershipTier,
+} from "@/lib/membership-pricing";
 import { PaymentFailedModal } from "./payment-failed-modal";
 import { CouponApplier, type AppliedCouponDetails } from "./coupon-applier";
 
 export interface MembershipPayButtonProps {
-  membershipType: "FLOW" | "RISE" | "INNER CIRCLE";
+  membershipType: MembershipTier;
   durationMonths: number;
+  mode: MembershipMode;
   userId: string;
   customerName: string;
   customerEmail: string;
@@ -17,37 +23,13 @@ export interface MembershipPayButtonProps {
   onFailure?: () => void;
 }
 
-const PRICE_MAP: Record<string, Record<number, number>> = {
-  FLOW: {
-    1: 2200,
-    3: 6000,
-    6: 11000,
-    12: 20000,
-  },
-  RISE: {
-    1: 4500,
-    3: 12500,
-    6: 24000,
-    12: 44000,
-  },
-  "INNER CIRCLE": {
-    1: 9000,
-    3: 25000,
-    6: 48000,
-    12: 88000,
-  },
-};
-
-function getMembershipPrice(type: string, months: number): number {
-  return PRICE_MAP[type]?.[months] ?? 0;
-}
-
 /**
  * Razorpay checkout button for Project Ananda memberships.
  */
 export function MembershipPayButton({
   membershipType,
   durationMonths,
+  mode,
   userId,
   customerName,
   customerEmail,
@@ -60,7 +42,7 @@ export function MembershipPayButton({
   const [showFailed, setShowFailed] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCouponDetails | null>(null);
 
-  const originalPrice = getMembershipPrice(membershipType, durationMonths);
+  const originalPrice = getMembershipPrice(membershipType, durationMonths, mode);
   const effectiveCouponCode = externalCouponCode || appliedCoupon?.couponCode;
   const finalAmount = appliedCoupon?.finalAmount ?? originalPrice;
 
@@ -75,6 +57,7 @@ export function MembershipPayButton({
         body: JSON.stringify({
           membershipType,
           durationMonths,
+          mode,
           userId,
           customerName,
           customerEmail,
@@ -98,7 +81,7 @@ export function MembershipPayButton({
         amount: orderData.amount,
         currency: orderData.currency,
         name: "Tattvam Wellness Center",
-        description: `Project Ananda — ${membershipType} — ${durationMonths} Month${durationMonths > 1 ? "s" : ""}`,
+        description: `Project Ananda — ${membershipType} — ${durationMonths} Month${durationMonths > 1 ? "s" : ""} (${mode === "online" ? "Online" : "Offline"})`,
         order_id: orderData.orderId,
         prefill: {
           name: customerName,
@@ -184,7 +167,7 @@ export function MembershipPayButton({
       <button
         onClick={handlePay}
         disabled={loading}
-        className="btn-primary w-full text-sm disabled:opacity-60 disabled:cursor-not-allowed"
+        className="btn-primary inline-flex w-full min-w-[8rem] items-center justify-center whitespace-nowrap px-4 py-3 text-center text-sm disabled:opacity-60 disabled:cursor-not-allowed"
         aria-busy={loading}
       >
         {loading ? "Processing…" : `Pay Now (₹${finalAmount.toLocaleString("en-IN")})`}

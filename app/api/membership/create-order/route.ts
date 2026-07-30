@@ -2,10 +2,16 @@ import { NextResponse } from "next/server";
 import { createRazorpayOrder } from "@/lib/payment";
 import { getAdminDb } from "@/lib/firebase-admin";
 import { validateCoupon } from "@/lib/coupon-validation";
+import {
+  getMembershipPrice,
+  type MembershipMode,
+  type MembershipTier,
+} from "@/lib/membership-pricing";
 
 export interface CreateMembershipOrderRequest {
-  membershipType: "FLOW" | "RISE" | "INNER CIRCLE";
+  membershipType: MembershipTier;
   durationMonths: number;
+  mode?: MembershipMode;
   userId: string;
   customerName: string;
   customerEmail: string;
@@ -22,31 +28,6 @@ export interface CreateMembershipOrderResponse {
   couponCode?: string;
 }
 
-const PRICE_MAP: Record<string, Record<number, number>> = {
-  FLOW: {
-    1: 2200,
-    3: 6000,
-    6: 11000,
-    12: 20000,
-  },
-  RISE: {
-    1: 4500,
-    3: 12500,
-    6: 24000,
-    12: 44000,
-  },
-  "INNER CIRCLE": {
-    1: 9000,
-    3: 25000,
-    6: 48000,
-    12: 88000,
-  },
-};
-
-function getMembershipPrice(type: string, months: number): number {
-  return PRICE_MAP[type]?.[months] ?? 0;
-}
-
 /**
  * POST /api/membership/create-order
  *
@@ -57,6 +38,7 @@ export async function POST(req: Request) {
   try {
     const body: CreateMembershipOrderRequest = await req.json();
     const { membershipType, durationMonths, userId, couponCode } = body;
+    const mode: MembershipMode = body.mode === "online" ? "online" : "offline";
 
     if (!membershipType || !durationMonths || !userId) {
       return NextResponse.json(
@@ -65,7 +47,7 @@ export async function POST(req: Request) {
       );
     }
 
-    const priceInRupees = getMembershipPrice(membershipType, durationMonths);
+    const priceInRupees = getMembershipPrice(membershipType, durationMonths, mode);
     if (!priceInRupees || priceInRupees <= 0) {
       return NextResponse.json(
         { error: "Invalid membership plan or duration" },
@@ -97,7 +79,7 @@ export async function POST(req: Request) {
     }
 
     const receipt = `pa_${membershipType.toLowerCase().replace(/\s/g, "-")}_${durationMonths}m_${Date.now()}`.slice(0, 40);
-    const itemTitle = `Project Ananda — ${membershipType} — ${durationMonths} Month${durationMonths > 1 ? "s" : ""}`;
+    const itemTitle = `Project Ananda — ${membershipType} — ${durationMonths} Month${durationMonths > 1 ? "s" : ""} (${mode === "online" ? "Online" : "Offline"})`;
 
     const order = await createRazorpayOrder({
       amountInRupees: finalAmountInRupees,
@@ -105,6 +87,7 @@ export async function POST(req: Request) {
       notes: {
         membershipType,
         durationMonths: String(durationMonths),
+        mode,
         userId,
         itemType: "membership",
         couponCode: appliedCouponCode || "",
@@ -120,8 +103,11 @@ export async function POST(req: Request) {
       currency: order.currency,
       status: "created",
       itemType: "membership",
-      itemId: `project-ananda-${membershipType.toLowerCase().replace(/\s/g, "-")}-${durationMonths}m`,
+      itemId: `project-ananda-${membershipType.toLowerCase().replace(/\s/g, "-")}-${durationMonths}m-${mode}`,
       itemTitle,
+      membershipTier: membershipType,
+      durationMonths,
+      mode,
       couponCode: appliedCouponCode || null,
       discountAmount: discountAmountInRupees || null,
       createdAt: new Date(),

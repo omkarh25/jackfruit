@@ -70,13 +70,20 @@ export async function getAllTestimonials(): Promise<TestimonialRecord[]> {
 }
 
 export async function getApprovedTestimonials(): Promise<TestimonialRecord[]> {
+  // NOTE: no orderBy here — a where+orderBy query requires a composite index
+  // and fails silently on the live site if the index is missing.
+  // Sorting is done client-side instead.
   const q = query(
     collection(db, testimonialsCollection),
-    where("isApproved", "==", true),
-    orderBy("createdAt", "desc")
+    where("isApproved", "==", true)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as TestimonialRecord);
+  const records = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as TestimonialRecord);
+  return records.sort((a, b) => {
+    const ta = a.createdAt?.toMillis?.() ?? 0;
+    const tb = b.createdAt?.toMillis?.() ?? 0;
+    return tb - ta;
+  });
 }
 
 export async function getFeaturedTestimonials(): Promise<TestimonialRecord[]> {

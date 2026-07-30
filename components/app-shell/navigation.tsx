@@ -4,11 +4,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { GoogleLoginButton } from "@/components/auth/google-login-button";
 import { useAuth } from "@/components/auth/auth-provider";
+import { QuickNav } from "@/components/app-shell/quick-nav";
 
 const navItems = [
   { href: "/feeds", label: "Feeds" },
   { href: "/services", label: "Services" },
-  { href: "/workshops", label: "Workshops" },
   { href: "/courses", label: "Courses" },
   { href: "/booking", label: "1:1 Booking" }
 ] as const;
@@ -48,13 +48,14 @@ export function Navigation() {
                 href="/profile"
                 className="rounded-full border border-tattvam-gold-300 bg-tattvam-gold-50 px-3 py-1.5 text-xs font-medium text-tattvam-purple-700 transition hover:bg-tattvam-gold-100 sm:px-4 sm:py-2 sm:text-sm"
               >
-                My Profile
+                Dashboard
               </Link>
             )}
           </div>
           <GoogleLoginButton />
         </div>
       </nav>
+      <QuickNav />
     </header>
   );
 }

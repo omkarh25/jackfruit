@@ -49,8 +49,14 @@ export async function GET(req: Request, { params }: RouteParams) {
     }[] = [];
 
     if (session.itemType === "workshop") {
-      const wsSnap = await db.collection("workshops").doc(session.itemId).get();
-      itemName = wsSnap.exists ? (wsSnap.data()?.title as string) || "Workshop" : "Workshop";
+      // Services first (workshops were merged into services), legacy fallback.
+      const svcSnap = await db.collection("services").doc(session.itemId).get();
+      if (svcSnap.exists) {
+        itemName = (svcSnap.data()?.title as string) || "Workshop";
+      } else {
+        const wsSnap = await db.collection("workshops").doc(session.itemId).get();
+        itemName = wsSnap.exists ? (wsSnap.data()?.title as string) || "Workshop" : "Workshop";
+      }
 
       const paymentsSnap = await db
         .collection("payments")

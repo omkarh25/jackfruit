@@ -21,6 +21,7 @@ import {
 } from "@/components/animations";
 import { LOGGER } from "@/lib/logger";
 import { TestimonialCarousel } from "@/components/testimonials/testimonial-carousel";
+import { QuickNav } from "@/components/app-shell/quick-nav";
 import { getApprovedTestimonials } from "@/lib/db/testimonials";
 import type { TestimonialItem } from "@/lib/types";
 
@@ -42,7 +43,6 @@ export default function HomePage() {
   LOGGER.info("Rendering premium landing page");
 
   // ─── Refs ───
-  const navRef = useRef<HTMLElement>(null);
   const heroRef = useRef<HTMLDivElement>(null);
   const essenceSectionRef = useRef<HTMLElement>(null);
   const tattvamCardRef = useRef<HTMLDivElement>(null);
@@ -107,29 +107,7 @@ export default function HomePage() {
     return () => ctx.revert();
   }, []);
 
-  // ─── 2. Navigation Hide/Show on Scroll ───
-  useEffect(() => {
-    if (!navRef.current) return;
-
-    let lastScroll = 0;
-    const handleScroll = () => {
-      const current = window.scrollY;
-      if (!navRef.current) return;
-      if (current > lastScroll && current > 100) {
-        navRef.current.classList.add("nav-hidden");
-        navRef.current.classList.remove("nav-visible");
-      } else {
-        navRef.current.classList.remove("nav-hidden");
-        navRef.current.classList.add("nav-visible");
-      }
-      lastScroll = current;
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  // ─── 3. Essence 3D Card Reveal ───
+  // ─── 2. Essence 3D Card Reveal ───
   useEffect(() => {
     if (!tattvamCardRef.current || !niramayaCardRef.current) return;
     const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -206,6 +184,9 @@ export default function HomePage() {
   }, []);
 
   // ─── 5. Mission Stat Counter ───
+  // Final values are rendered in the markup by default, so users with
+  // reduced-motion (or browsers where ScrollTrigger never fires) still see
+  // the real numbers. Animation just re-plays from zero when allowed.
   useEffect(() => {
     if (!statNumbersRef.current) return;
     const mql = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -217,6 +198,8 @@ export default function HomePage() {
         const target = parseFloat(counter.getAttribute("data-target") || "0");
         const suffix = counter.getAttribute("data-suffix") || "";
         const isDecimal = counter.getAttribute("data-decimal") === "true";
+
+        counter.textContent = "0" + suffix;
 
         const obj = { val: 0 };
         gsap.to(obj, {
@@ -302,7 +285,10 @@ export default function HomePage() {
         setTestimonials(mapped);
         setTestimonialsLoaded(true);
       })
-      .catch(() => {
+      .catch((err) => {
+        // Keep the static fallback, but surface the real error so data issues
+        // (permissions, missing fields) are visible instead of silent.
+        console.error("Failed to load testimonials from Firestore:", err);
         setTestimonialsLoaded(true);
       });
   }, []);
@@ -341,57 +327,57 @@ export default function HomePage() {
       <TravelingLogo />
       <BackgroundMusic />
 
-      {/* Navigation */}
-      <nav
-        ref={navRef}
-        className="fixed top-0 left-0 right-0 z-50 glass-card transition-transform duration-300 nav-visible"
-      >
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
-          <Link href="/" className="flex items-center">
-            <div className="relative h-12 w-36 sm:h-20 sm:w-60">
-              <Image
-                src="/assets/homepage/logo.png"
-                alt="Tattvam Niramaya Logo"
-                fill
-                className="object-cover"
-                priority
-              />
+      {/* Navigation + Quick Nav (always visible) */}
+      <header className="fixed top-0 left-0 right-0 z-50">
+        <nav className="glass-card">
+          <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+            <Link href="/" className="flex items-center">
+              <div className="relative h-12 w-36 sm:h-20 sm:w-60">
+                <Image
+                  src="/assets/homepage/logo.png"
+                  alt="Tattvam Niramaya Logo"
+                  fill
+                  className="object-cover"
+                  priority
+                />
+              </div>
+            </Link>
+            <div className="flex items-center gap-3 sm:gap-6">
+              <Link
+                href="#essence"
+                className="hidden text-sm font-medium text-tattvam-purple-600 transition hover:text-tattvam-purple-800 md:block"
+              >
+                Our Essence
+              </Link>
+              <Link
+                href="#mission"
+                className="hidden text-sm font-medium text-tattvam-purple-600 transition hover:text-tattvam-purple-800 md:block"
+              >
+                Mission
+              </Link>
+              <Link
+                href="#founder"
+                className="hidden text-sm font-medium text-tattvam-purple-600 transition hover:text-tattvam-purple-800 md:block"
+              >
+                Founder
+              </Link>
+              <Link
+                href="#testimonials"
+                className="hidden text-sm font-medium text-tattvam-purple-600 transition hover:text-tattvam-purple-800 md:block"
+              >
+                Stories
+              </Link>
+              <Link href="/booking" className="btn-primary whitespace-nowrap px-4 py-2 text-xs sm:px-6 sm:py-3 sm:text-sm">
+                Book Discovery Call
+              </Link>
             </div>
-          </Link>
-          <div className="flex items-center gap-3 sm:gap-6">
-            <Link
-              href="#essence"
-              className="hidden text-sm font-medium text-tattvam-purple-600 transition hover:text-tattvam-purple-800 md:block"
-            >
-              Our Essence
-            </Link>
-            <Link
-              href="#mission"
-              className="hidden text-sm font-medium text-tattvam-purple-600 transition hover:text-tattvam-purple-800 md:block"
-            >
-              Mission
-            </Link>
-            <Link
-              href="#founder"
-              className="hidden text-sm font-medium text-tattvam-purple-600 transition hover:text-tattvam-purple-800 md:block"
-            >
-              Founder
-            </Link>
-            <Link
-              href="#testimonials"
-              className="hidden text-sm font-medium text-tattvam-purple-600 transition hover:text-tattvam-purple-800 md:block"
-            >
-              Stories
-            </Link>
-            <Link href="/booking" className="btn-primary whitespace-nowrap px-4 py-2 text-xs sm:px-6 sm:py-3 sm:text-sm">
-              Book Discovery Call
-            </Link>
           </div>
-        </div>
-      </nav>
+        </nav>
+        <QuickNav />
+      </header>
 
       {/* Hero Section */}
-      <section className="relative min-h-screen flex items-center justify-center section-padding">
+      <section className="relative min-h-screen flex items-center justify-center section-padding pt-40 sm:pt-48 md:pt-48 lg:pt-48">
         <AuroraBackground variant="light" />
         <div className="hero-orb">
           <FloatingOrbs count={6} />
@@ -563,30 +549,6 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Top Quick Navigation */}
-      <div className="fixed top-[72px] left-0 right-0 z-40 hidden border-b border-tattvam-purple-100 bg-white/90 py-2 backdrop-blur-md sm:block">
-        <div className="mx-auto flex max-w-7xl items-center justify-center gap-4 px-6">
-          <Link
-            href="/services/project-ananda"
-            className="rounded-full bg-tattvam-purple-50 px-4 py-1.5 text-xs font-medium text-tattvam-purple-700 transition hover:bg-tattvam-purple-100"
-          >
-            Project Ananda
-          </Link>
-          <Link
-            href="/services/inner-power-camp"
-            className="rounded-full bg-tattvam-purple-50 px-4 py-1.5 text-xs font-medium text-tattvam-purple-700 transition hover:bg-tattvam-purple-100"
-          >
-            Inner Power Camp
-          </Link>
-          <Link
-            href="/booking"
-            className="rounded-full bg-tattvam-gold-100 px-4 py-1.5 text-xs font-medium text-tattvam-gold-800 transition hover:bg-tattvam-gold-200"
-          >
-            Book 1:1 Consultation
-          </Link>
-        </div>
-      </div>
-
       {/* Our Pillars Section */}
       <section className="section-padding">
         <div className="mx-auto max-w-6xl px-6">
@@ -709,7 +671,7 @@ export default function HomePage() {
                         data-target="2"
                         data-suffix="M+"
                       >
-                        0M+
+                        2M+
                       </span>
                     </span>
                     <p className="mt-2 text-tattvam-purple-500">
@@ -725,7 +687,7 @@ export default function HomePage() {
                           data-target="3"
                           data-suffix=""
                         >
-                          0
+                          3
                         </span>
                       </span>
                       <p className="text-sm text-tattvam-purple-500">Years</p>
@@ -737,7 +699,7 @@ export default function HomePage() {
                           data-target="100"
                           data-suffix="+"
                         >
-                          0+
+                          100+
                         </span>
                       </span>
                       <p className="text-sm text-tattvam-purple-500">
@@ -1008,7 +970,7 @@ export default function HomePage() {
                   <Link href="/services">Corporate Wellness</Link>
                 </li>
                 <li>
-                  <Link href="/workshops">Workshops</Link>
+                  <Link href="/services">Workshops</Link>
                 </li>
                 <li>
                   <Link href="/courses">Courses</Link>

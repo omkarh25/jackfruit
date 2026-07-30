@@ -92,12 +92,22 @@ export async function POST(req: Request) {
     const bookingRef = getAdminDb().collection("bookings").doc(bookingId);
     const bookingSnap = await bookingRef.get();
     let slotId: string | null = null;
+    let meetingLink: string | undefined;
 
     if (bookingSnap.exists) {
       const bookingData = bookingSnap.data();
       slotId = bookingData?.slotId ?? null;
+
+      // Copy the meeting link from the slot only now that payment is captured,
+      // so the link is never exposed before payment.
+      if (slotId) {
+        const slotSnap = await getAdminDb().collection("slots").doc(slotId).get();
+        meetingLink = slotSnap.exists ? (slotSnap.data()?.meetingLink as string | undefined) : undefined;
+      }
+
       await bookingRef.update({
         status: "upcoming",
+        ...(meetingLink ? { meetingLink } : {}),
         updatedAt: new Date(),
       });
 
@@ -110,7 +120,7 @@ export async function POST(req: Request) {
           itemId: bookingId,
           date: bookingData?.slotDate || "",
           time: bookingData?.slotTime || "",
-          meetingLink: bookingData?.meetingLink || undefined,
+          meetingLink: meetingLink || bookingData?.meetingLink || undefined,
           customerName: bookingData?.clientName || "",
           customerEmail: bookingData?.clientEmail || "",
           userId: bookingData?.userId || "",
@@ -125,6 +135,7 @@ export async function POST(req: Request) {
     if (slotId) {
       await getAdminDb().collection("slots").doc(slotId).update({
         status: "booked",
+        heldAt: null,
         updatedAt: new Date(),
       });
     }

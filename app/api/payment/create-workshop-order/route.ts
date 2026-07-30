@@ -38,22 +38,57 @@ export async function POST(req: Request) {
 
     let title = "Workshop Registration";
     let priceInRupees = 0;
+    let found = false;
 
-    // 1. Try to read workshop from Firestore
-    const wsSnap = await getAdminDb().collection("workshops").doc(workshopId).get();
-    if (wsSnap.exists) {
-      const data = wsSnap.data();
+    const readService = (data: FirebaseFirestore.DocumentData | undefined) => {
       title = data?.title || title;
-      priceInRupees = Number(data?.price) || 0;
+      priceInRupees =
+        typeof data?.price === "number"
+          ? data.price
+          : parseInt(String(data?.price || "").replace(/[^0-9]/g, ""), 10) || 0;
+      found = true;
+    };
+
+    // 1. Try the services collection first (workshops were merged into services),
+    //    matching by document id or slug.
+    const db = getAdminDb();
+    const svcSnap = await db.collection("services").doc(workshopId).get();
+    if (svcSnap.exists) {
+      readService(svcSnap.data());
     } else {
-      // 1b. Fallback: try static workshops by ID or slug
+      const svcSlugSnap = await db
+        .collection("services")
+        .where("slug", "==", workshopId)
+        .limit(1)
+        .get();
+      if (!svcSlugSnap.empty) {
+        readService(svcSlugSnap.docs[0].data());
+      }
+    }
+
+    // 1b. Legacy fallback: workshops collection.
+    if (!found) {
+      const wsSnap = await db.collection("workshops").doc(workshopId).get();
+      if (wsSnap.exists) {
+        const data = wsSnap.data();
+        title = data?.title || title;
+        priceInRupees = Number(data?.price) || 0;
+        found = true;
+      }
+    }
+
+    // 1c. Fallback: static workshops by ID or slug.
+    if (!found) {
       const staticWs = staticWorkshops.find(w => w.id === workshopId || w.slug === workshopId);
       if (staticWs) {
         title = staticWs.title;
         priceInRupees = staticWs.price ? parseInt(staticWs.price.replace(/[^0-9]/g, "")) || 0 : 0;
-      } else {
-        return NextResponse.json({ error: "Workshop not found" }, { status: 404 });
+        found = true;
       }
+    }
+
+    if (!found) {
+      return NextResponse.json({ error: "Workshop not found" }, { status: 404 });
     }
 
     if (priceInRupees <= 0) {

@@ -94,11 +94,19 @@ export async function POST(req: Request) {
       let whatsappLink = "";
 
       if (workshopId) {
-        const wsSnap = await getAdminDb().collection("workshops").doc(workshopId).get();
-        if (wsSnap.exists) {
-          const wsData = wsSnap.data();
-          workshopDate = wsData?.date || "";
-          whatsappLink = wsData?.whatsappLink || "";
+        // Services first (workshops were merged into services), legacy workshops fallback.
+        const svcSnap = await getAdminDb().collection("services").doc(workshopId).get();
+        if (svcSnap.exists) {
+          const svcData = svcSnap.data();
+          workshopDate = svcData?.date || "";
+          whatsappLink = svcData?.whatsappLink || "";
+        } else {
+          const wsSnap = await getAdminDb().collection("workshops").doc(workshopId).get();
+          if (wsSnap.exists) {
+            const wsData = wsSnap.data();
+            workshopDate = wsData?.date || "";
+            whatsappLink = wsData?.whatsappLink || "";
+          }
         }
       }
 

@@ -6,16 +6,16 @@ import { useAuth } from "@/components/auth/auth-provider";
 
 const allNavItems = [
   { href: "/admin", label: "Dashboard", icon: "📊", roles: ["admin", "super_admin"] },
-  { href: "/admin/workshops", label: "Workshops", icon: "🎓", roles: ["admin", "super_admin"] },
   { href: "/admin/services", label: "Services", icon: "✨", roles: ["admin", "super_admin"] },
   { href: "/admin/consultations", label: "1:1 Consultations", icon: "📅", roles: ["admin", "super_admin", "coach"] },
   { href: "/admin/attendance", label: "Attendance", icon: "✅", roles: ["admin", "super_admin"] },
   { href: "/admin/courses", label: "Courses", icon: "📚", roles: ["admin", "super_admin"] },
+  { href: "/admin/memberships", label: "Memberships", icon: "🌟", roles: ["admin", "super_admin"] },
   { href: "/admin/payments", label: "Payments", icon: "💰", roles: ["admin", "super_admin"] },
   { href: "/admin/users", label: "Users", icon: "👥", roles: ["admin", "super_admin"] },
   { href: "/admin/content", label: "Content CMS", icon: "📝", roles: ["admin", "super_admin"] },
   { href: "/admin/testimonials", label: "Testimonials", icon: "💬", roles: ["admin", "super_admin"] },
-  { href: "/admin/feed", label: "Feed", icon: "📰", roles: ["admin", "super_admin"] },
+  { href: "/admin/feeds", label: "Feed", icon: "📰", roles: ["admin", "super_admin"] },
   { href: "/admin/notifications", label: "Notifications", icon: "🔔", roles: ["admin", "super_admin"] },
   { href: "/admin/offers", label: "Offers & Coupons", icon: "🎁", roles: ["admin", "super_admin"] },
   { href: "/admin/media", label: "Media Library", icon: "🖼️", roles: ["admin", "super_admin"] },

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/admin/admin-shell";
+import { useAuth } from "@/components/auth/auth-provider";
 import {
   getAllUsers,
   updateUserProfile,
@@ -10,6 +11,7 @@ import {
 } from "@/lib/db/users";
 
 export default function AdminUsersPage() {
+  const { firebaseUser } = useAuth();
   const [users, setUsers] = useState<FirestoreUserProfile[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -21,6 +23,9 @@ export default function AdminUsersPage() {
   } | null>(null);
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [detailsLoading, setDetailsLoading] = useState(false);
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [addUserForm, setAddUserForm] = useState({ name: "", email: "", phone: "" });
+  const [addUserSaving, setAddUserSaving] = useState(false);
 
   useEffect(() => {
     loadUsers();
@@ -96,6 +101,35 @@ export default function AdminUsersPage() {
     showMessage("CSV exported successfully.", "success");
   }
 
+  async function handleAddUser(e: React.FormEvent) {
+    e.preventDefault();
+    setAddUserSaving(true);
+    try {
+      const token = await firebaseUser?.getIdToken();
+      const res = await fetch("/api/admin/users/create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(addUserForm),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "Failed to add user");
+      showMessage(
+        data.existedInAuth
+          ? "User added (linked to their existing sign-in account)."
+          : "User added. They can sign in with this email via Google or password reset.",
+        "success"
+      );
+      setShowAddUser(false);
+      setAddUserForm({ name: "", email: "", phone: "" });
+      await loadUsers();
+    } catch (err) {
+      console.error(err);
+      showMessage(err instanceof Error ? err.message : "Failed to add user.", "error");
+    } finally {
+      setAddUserSaving(false);
+    }
+  }
+
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
       u.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -123,6 +157,9 @@ export default function AdminUsersPage() {
       {/* Actions Bar */}
       <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap items-center gap-3">
+          <button onClick={() => setShowAddUser(true)} className="btn-primary text-sm">
+            ＋ Add User
+          </button>
           <button onClick={exportToCSV} className="rounded-full border border-tattvam-purple-200 bg-white px-5 py-3 text-sm font-medium text-tattvam-purple-600 transition hover:bg-tattvam-purple-50">
             📤 Export CSV
           </button>
@@ -333,6 +370,59 @@ export default function AdminUsersPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      {/* Add User Modal */}
+      {showAddUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-start justify-between">
+              <h2 className="font-serif text-2xl font-bold text-tattvam-purple-900">Add User</h2>
+              <button
+                onClick={() => setShowAddUser(false)}
+                className="rounded-lg border border-tattvam-purple-200 px-3 py-1.5 text-sm text-tattvam-purple-600 hover:bg-tattvam-purple-50"
+              >
+                Close
+              </button>
+            </div>
+            <p className="mt-2 text-sm text-tattvam-purple-500">
+              For offline / existing customers. If they already signed in with this email, their account is linked.
+            </p>
+            <form onSubmit={handleAddUser} className="mt-4 space-y-4">
+              <div>
+                <label className="text-sm font-medium text-tattvam-purple-700">Name</label>
+                <input
+                  type="text"
+                  required
+                  value={addUserForm.name}
+                  onChange={(e) => setAddUserForm({ ...addUserForm, name: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-tattvam-purple-200 px-4 py-2.5 text-sm text-tattvam-purple-800 focus:border-tattvam-purple-400 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-tattvam-purple-700">Email</label>
+                <input
+                  type="email"
+                  required
+                  value={addUserForm.email}
+                  onChange={(e) => setAddUserForm({ ...addUserForm, email: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-tattvam-purple-200 px-4 py-2.5 text-sm text-tattvam-purple-800 focus:border-tattvam-purple-400 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-tattvam-purple-700">Phone (optional)</label>
+                <input
+                  type="tel"
+                  value={addUserForm.phone}
+                  onChange={(e) => setAddUserForm({ ...addUserForm, phone: e.target.value })}
+                  className="mt-1 w-full rounded-xl border border-tattvam-purple-200 px-4 py-2.5 text-sm text-tattvam-purple-800 focus:border-tattvam-purple-400 focus:outline-none"
+                />
+              </div>
+              <button type="submit" disabled={addUserSaving} className="btn-primary w-full text-sm disabled:opacity-50">
+                {addUserSaving ? "Adding..." : "Add User"}
+              </button>
+            </form>
           </div>
         </div>
       )}

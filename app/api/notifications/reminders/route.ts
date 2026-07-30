@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { getAdminDb } from "@/lib/firebase-admin";
-import { sendReminderEmail, type ReminderType } from "@/lib/notification-helpers";
+import { sendEmail } from "@/lib/email";
+import {
+  sendReminderEmail,
+  wasNotificationSent,
+  logNotification,
+  type ReminderType,
+  type MembershipExpiryType,
+} from "@/lib/notification-helpers";
 
 const REMINDER_MINUTES: ReminderType[] = ["reminder_60", "reminder_30", "reminder_15", "reminder_5"];
 
@@ -132,8 +139,19 @@ export async function POST(req: Request) {
 
       if (!workshopId || !userId) continue;
 
-      // Get workshop date
-      const wsSnap = await db.collection("workshops").doc(workshopId).get();
+      // Get workshop date — services first (workshops were merged), legacy fallback.
+      let wsSnap = await db.collection("services").doc(workshopId).get();
+      if (!wsSnap.exists) {
+        const svcSlugSnap = await db
+          .collection("services")
+          .where("slug", "==", workshopId)
+          .limit(1)
+          .get();
+        if (!svcSlugSnap.empty) wsSnap = svcSlugSnap.docs[0];
+      }
+      if (!wsSnap.exists) {
+        wsSnap = await db.collection("workshops").doc(workshopId).get();
+      }
       if (!wsSnap.exists) continue;
 
       const wsData = wsSnap.data();
@@ -172,6 +190,85 @@ export async function POST(req: Request) {
           results.push(`workshop ${doc.id} ${reminderType}`);
           break;
         }
+      }
+    }
+
+    // ─── 3. Membership Expiry Sweep ───
+    // Sends emails 30/15/7/1 days before expiry and one notice after expiry.
+    const EXPIRY_THRESHOLDS: { days: number; type: MembershipExpiryType }[] = [
+      { days: 30, type: "membership_expiry_30" },
+      { days: 15, type: "membership_expiry_15" },
+      { days: 7, type: "membership_expiry_7" },
+      { days: 1, type: "membership_expiry_1" },
+    ];
+
+    const membershipsSnap = await db.collection("memberships").get();
+    const DAY_MS = 24 * 60 * 60 * 1000;
+
+    for (const doc of membershipsSnap.docs) {
+      const m = doc.data();
+      const userId = m.userId as string;
+      const expiryDate = new Date(m.expiryDate as string);
+      if (!userId || isNaN(expiryDate.getTime())) continue;
+
+      const daysLeft = Math.floor((expiryDate.getTime() - now.getTime()) / DAY_MS);
+
+      // Expired notice: send once within the first day after expiry.
+      if (daysLeft === -1) {
+        const alreadySent = await wasNotificationSent(userId, doc.id, "membership_expired");
+        if (!alreadySent) {
+          const userSnap = await db.collection("users").doc(userId).get();
+          const email = userSnap.data()?.email as string | undefined;
+          if (email) {
+            await sendEmail({
+              to: email,
+              subject: "Your Project Ananda membership has expired",
+              html: `<p>Namaste ${userSnap.data()?.name || "Seeker"},</p>
+<p>Your Project Ananda <strong>${m.tier}</strong> membership expired on ${expiryDate.toLocaleDateString("en-IN")}.</p>
+<p><a href="${process.env.APP_BASE_URL || "https://tattvamniramaya.com"}/services/project-ananda/pricing">Renew your membership</a> to continue your transformation journey.</p>`,
+            });
+            await logNotification({
+              userId,
+              recipientEmail: email,
+              type: "membership_expired",
+              itemType: "membership",
+              itemId: doc.id,
+              itemTitle: `Project Ananda ${m.tier}`,
+              sentAt: new Date(),
+            });
+            results.push(`membership ${doc.id} expired`);
+          }
+        }
+        continue;
+      }
+
+      for (const { days, type } of EXPIRY_THRESHOLDS) {
+        if (daysLeft !== days) continue;
+        const alreadySent = await wasNotificationSent(userId, doc.id, type);
+        if (alreadySent) break;
+
+        const userSnap = await db.collection("users").doc(userId).get();
+        const email = userSnap.data()?.email as string | undefined;
+        if (!email) break;
+
+        await sendEmail({
+          to: email,
+          subject: `Your Project Ananda membership expires in ${days} day${days > 1 ? "s" : ""}`,
+          html: `<p>Namaste ${userSnap.data()?.name || "Seeker"},</p>
+<p>Your Project Ananda <strong>${m.tier}</strong> membership expires on <strong>${expiryDate.toLocaleDateString("en-IN")}</strong> (${days} day${days > 1 ? "s" : ""} left).</p>
+<p><a href="${process.env.APP_BASE_URL || "https://tattvamniramaya.com"}/services/project-ananda/pricing">Renew now</a> to keep your journey uninterrupted.</p>`,
+        });
+        await logNotification({
+          userId,
+          recipientEmail: email,
+          type,
+          itemType: "membership",
+          itemId: doc.id,
+          itemTitle: `Project Ananda ${m.tier}`,
+          sentAt: new Date(),
+        });
+        results.push(`membership ${doc.id} ${type}`);
+        break; // only one expiry email per membership per run
       }
     }
 

@@ -8,11 +8,18 @@ const BUSINESS_EMAIL = process.env.BUSINESS_NOTIFICATION_EMAIL || "hemathehealer
 
 export type ReminderType = "reminder_60" | "reminder_30" | "reminder_15" | "reminder_5";
 
+export type MembershipExpiryType =
+  | "membership_expiry_30"
+  | "membership_expiry_15"
+  | "membership_expiry_7"
+  | "membership_expiry_1"
+  | "membership_expired";
+
 export interface NotificationLog {
   id?: string;
   userId: string;
   recipientEmail: string;
-  type: "confirmation" | ReminderType;
+  type: "confirmation" | ReminderType | MembershipExpiryType;
   itemType: "workshop" | "service" | "consultation" | "membership";
   itemId: string;
   itemTitle: string;

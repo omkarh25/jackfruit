@@ -30,7 +30,7 @@ export interface BookingRecord {
   slotTime: string;
   duration?: string;
   meetingLink?: string;
-  status: "upcoming" | "completed" | "cancelled" | "no_show";
+  status: "pending" | "upcoming" | "completed" | "cancelled" | "no_show";
   intakeNotes?: string;
   internalNotes?: string;
   createdAt?: Timestamp;

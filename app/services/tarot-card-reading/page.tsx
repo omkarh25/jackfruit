@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { FloatingOrbs, Reveal } from "@/components/animations";
 import { Navigation } from "@/components/app-shell/navigation";
+import { useServiceEnquiry } from "@/lib/hooks/use-service-enquiry";
 
 const WHATSAPP_LINK = "https://wa.me/916363606088";
 
@@ -42,6 +43,8 @@ const sessionSteps = [
 ];
 
 export default function TarotCardReadingPage() {
+  const { enquiryMode, whatsappLink } = useServiceEnquiry("tarot-card-reading");
+
   return (
     <div className="relative overflow-x-hidden bg-tattvam-neutral-50">
       <Navigation />
@@ -86,21 +89,25 @@ export default function TarotCardReadingPage() {
 
               <Reveal delay={900}>
                 <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row md:items-start">
-                  <a
-                    href="/booking?service=Tarot%20Card%20Reading"
-                    className="btn-primary inline-flex"
-                  >
-                    Choose Available Slot
-                    <span className="ml-2">→</span>
-                  </a>
-                  <a
-                    href={WHATSAPP_LINK}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="btn-secondary inline-flex"
-                  >
-                    WhatsApp Enquiry
-                  </a>
+                  {enquiryMode ? (
+                    <a
+                      href={whatsappLink || WHATSAPP_LINK}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn-primary inline-flex"
+                    >
+                      WhatsApp Enquiry
+                      <span className="ml-2">→</span>
+                    </a>
+                  ) : (
+                    <a
+                      href="/booking?service=Tarot%20Card%20Reading"
+                      className="btn-primary inline-flex"
+                    >
+                      Choose Available Slot
+                      <span className="ml-2">→</span>
+                    </a>
+                  )}
                 </div>
               </Reveal>
             </div>
@@ -355,21 +362,25 @@ export default function TarotCardReadingPage() {
 
           <Reveal delay={400}>
             <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <a
-                href="/booking?service=Tarot%20Card%20Reading"
-                className="btn-primary inline-flex"
-              >
-                Choose Available Slot
-                <span className="ml-2">→</span>
-              </a>
-              <a
-                href={WHATSAPP_LINK}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-secondary inline-flex"
-              >
-                WhatsApp Enquiry
-              </a>
+              {enquiryMode ? (
+                <a
+                  href={whatsappLink || WHATSAPP_LINK}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn-primary inline-flex"
+                >
+                  WhatsApp Enquiry
+                  <span className="ml-2">→</span>
+                </a>
+              ) : (
+                <a
+                  href="/booking?service=Tarot%20Card%20Reading"
+                  className="btn-primary inline-flex"
+                >
+                  Choose Available Slot
+                  <span className="ml-2">→</span>
+                </a>
+              )}
             </div>
           </Reveal>
         </div>

@@ -24,6 +24,8 @@ function BookingContent({ serviceName }: { serviceName: string }) {
   const [successRedirectUrl, setSuccessRedirectUrl] = useState<string | undefined>(undefined);
 
   useEffect(() => {
+    // Fire-and-forget: release any slots whose 15-minute hold has expired.
+    fetch("/api/booking/sweep", { method: "POST" }).catch(() => {});
     loadSlots();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -65,7 +67,8 @@ function BookingContent({ serviceName }: { serviceName: string }) {
       // 1. Hold the slot so another user can't book it while payment is in progress.
       await holdSlot(selectedSlot.id!, firebaseUser.uid);
 
-      // 2. Create a pending booking record.
+      // 2. Create a pending booking record. The meeting link is intentionally
+      // omitted — the verify route copies it from the slot after payment.
       const bookingId = await createBooking({
         userId: firebaseUser.uid,
         serviceId: serviceName,
@@ -76,8 +79,7 @@ function BookingContent({ serviceName }: { serviceName: string }) {
         slotDate: selectedSlot.date,
         slotTime: selectedSlot.time,
         duration: selectedSlot.duration,
-        meetingLink: selectedSlot.meetingLink || "",
-        status: "upcoming",
+        status: "pending",
         intakeNotes: "",
         internalNotes: "",
       });
@@ -211,14 +213,9 @@ function BookingContent({ serviceName }: { serviceName: string }) {
             <p className="text-sm text-tattvam-purple-600">
               <span className="font-medium">Price:</span> ₹{selectedSlot.price}
             </p>
-            {selectedSlot.meetingLink && (
-              <p className="text-sm text-tattvam-purple-600">
-                <span className="font-medium">Meeting Link:</span>{" "}
-                <a href={selectedSlot.meetingLink} target="_blank" rel="noopener noreferrer" className="text-tattvam-purple-700 underline">
-                  {selectedSlot.meetingLink}
-                </a>
-              </p>
-            )}
+            <p className="text-sm text-tattvam-purple-500">
+              The meeting link will appear in your Dashboard after payment.
+            </p>
           </div>
           <div className="mt-6">
             <ConsultationPayButton
@@ -335,19 +332,6 @@ function BookingContent({ serviceName }: { serviceName: string }) {
                   <span className="text-tattvam-purple-600">Price</span>
                   <span className="font-medium text-tattvam-purple-800">₹{selectedSlot.price}</span>
                 </div>
-                {selectedSlot.meetingLink && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-tattvam-purple-600">Meeting</span>
-                    <a
-                      href={selectedSlot.meetingLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="font-medium text-tattvam-purple-700 underline"
-                    >
-                      Link ↗
-                    </a>
-                  </div>
-                )}
                 <div className="divider-gold my-4" />
                 <button
                   onClick={handleBookAndPay}

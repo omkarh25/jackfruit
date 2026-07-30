@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { AdminShell } from "@/components/admin/admin-shell";
+import { useAuth } from "@/components/auth/auth-provider";
 import {
   getAllServices,
   createService,
@@ -22,9 +23,18 @@ const emptyService: Omit<ServiceRecord, "id" | "createdAt" | "updatedAt"> = {
   outcomes: [],
   isVisible: true,
   paymentRedirectUrl: "",
+  kind: "service",
+  longDescription: "",
+  format: "Live Zoom",
+  location: "Online",
+  whatsappLink: "",
+  venueLink: "",
+  maxParticipants: undefined,
+  registrationsEnabled: true,
 };
 
 export default function AdminServicesPage() {
+  const { firebaseUser } = useAuth();
   const [services, setServices] = useState<ServiceRecord[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -35,6 +45,7 @@ export default function AdminServicesPage() {
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [view, setView] = useState<"active" | "archived">("active");
+  const [migrating, setMigrating] = useState(false);
 
   useEffect(() => {
     loadServices();
@@ -81,10 +92,39 @@ export default function AdminServicesPage() {
       outcomes: service.outcomes || [],
       isVisible: service.isVisible,
       paymentRedirectUrl: service.paymentRedirectUrl || "",
+      kind: service.kind || "service",
+      longDescription: service.longDescription || "",
+      format: service.format || "Live Zoom",
+      location: service.location || "Online",
+      whatsappLink: service.whatsappLink || "",
+      venueLink: service.venueLink || "",
+      maxParticipants: service.maxParticipants,
+      registrationsEnabled: service.registrationsEnabled ?? true,
     });
     setDatesInput(service.dates?.join(", ") || "");
     setOutcomesInput(service.outcomes?.join(", ") || "");
     setIsModalOpen(true);
+  }
+
+  async function handleMigrateWorkshops() {
+    if (!confirm("Copy all workshops from the legacy Workshops section into Services? This is safe to run multiple times.")) return;
+    setMigrating(true);
+    try {
+      const token = await firebaseUser?.getIdToken();
+      const res = await fetch("/api/admin/migrate-workshops", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) throw new Error(data.error || "Migration failed");
+      showMessage(`Migration complete: ${data.migratedCount} moved, ${data.skippedCount} already present.`, "success");
+      await loadServices();
+    } catch (e) {
+      console.error(e);
+      showMessage(e instanceof Error ? e.message : "Failed to migrate workshops.", "error");
+    } finally {
+      setMigrating(false);
+    }
   }
 
   function validateForm(): string | null {
@@ -189,6 +229,13 @@ export default function AdminServicesPage() {
         <div className="flex flex-wrap items-center gap-3">
           <button onClick={openAdd} className="btn-primary text-sm">
             ➕ Add New Service
+          </button>
+          <button
+            onClick={handleMigrateWorkshops}
+            disabled={migrating}
+            className="rounded-full border border-tattvam-purple-200 bg-white px-5 py-3 text-sm font-medium text-tattvam-purple-600 transition hover:bg-tattvam-purple-50 disabled:opacity-60"
+          >
+            {migrating ? "Migrating…" : "⇪ Migrate Workshops"}
           </button>
           <div className="flex rounded-full border border-tattvam-purple-200 bg-white p-1">
             <button
@@ -334,6 +381,26 @@ export default function AdminServicesPage() {
             <div className="mt-6 grid gap-4">
               <div>
                 <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
+                  Type <span className="text-red-500">*</span>
+                </label>
+                <select
+                  value={form.kind || "service"}
+                  onChange={(e) => {
+                    const kind = e.target.value as ServiceRecord["kind"];
+                    setForm({
+                      ...form,
+                      kind,
+                      category: kind === "workshop" ? "Workshop" : form.category === "Workshop" ? "Healing" : form.category,
+                    });
+                  }}
+                  className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
+                >
+                  <option value="service">Service</option>
+                  <option value="workshop">Workshop</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">
                   Title <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -390,6 +457,7 @@ export default function AdminServicesPage() {
                     <option value="Healing">Healing</option>
                     <option value="Coaching">Coaching</option>
                     <option value="Therapy">Therapy</option>
+                    <option value="Workshop">Workshop</option>
                   </select>
                 </div>
               </div>
@@ -459,6 +527,96 @@ export default function AdminServicesPage() {
                   className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
                 />
               </div>
+
+              {form.kind === "workshop" && (
+                <>
+                  <div>
+                    <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Long Description</label>
+                    <textarea
+                      value={form.longDescription || ""}
+                      onChange={(e) => setForm({ ...form, longDescription: e.target.value })}
+                      rows={4}
+                      className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Format</label>
+                      <select
+                        value={form.format || "Live Zoom"}
+                        onChange={(e) => setForm({ ...form, format: e.target.value as ServiceRecord["format"] })}
+                        className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
+                      >
+                        <option value="Live Zoom">Live Zoom</option>
+                        <option value="Recording">Recording</option>
+                        <option value="Offline">Offline</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Location</label>
+                      <select
+                        value={form.location || "Online"}
+                        onChange={(e) => setForm({ ...form, location: e.target.value as ServiceRecord["location"] })}
+                        className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
+                      >
+                        <option value="Online">Online</option>
+                        <option value="Offline">Offline</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">WhatsApp Group Link</label>
+                      <input
+                        type="text"
+                        value={form.whatsappLink || ""}
+                        onChange={(e) => setForm({ ...form, whatsappLink: e.target.value })}
+                        placeholder="https://wa.me/... or group invite link"
+                        className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Max Participants</label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={form.maxParticipants ?? ""}
+                        onChange={(e) =>
+                          setForm({
+                            ...form,
+                            maxParticipants: e.target.value ? parseInt(e.target.value, 10) : undefined,
+                          })
+                        }
+                        className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                  {form.format === "Offline" && (
+                    <div>
+                      <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Venue Map Link</label>
+                      <input
+                        type="text"
+                        value={form.venueLink || ""}
+                        onChange={(e) => setForm({ ...form, venueLink: e.target.value })}
+                        placeholder="https://maps.google.com/..."
+                        className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
+                      />
+                    </div>
+                  )}
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="checkbox"
+                      id="registrationsEnabled"
+                      checked={form.registrationsEnabled ?? true}
+                      onChange={(e) => setForm({ ...form, registrationsEnabled: e.target.checked })}
+                      className="h-4 w-4 rounded border-tattvam-purple-300 text-tattvam-purple-600"
+                    />
+                    <label htmlFor="registrationsEnabled" className="text-sm text-tattvam-purple-700">
+                      Registrations open
+                    </label>
+                  </div>
+                </>
+              )}
               <div>
                 <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Payment Redirect URL (Optional)</label>
                 <input

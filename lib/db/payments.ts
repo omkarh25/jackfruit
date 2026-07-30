@@ -7,7 +7,6 @@ import {
   updateDoc,
   query,
   where,
-  orderBy,
   serverTimestamp,
   type Timestamp,
 } from "firebase/firestore";
@@ -59,13 +58,13 @@ export async function updatePaymentStatus(
 }
 
 export async function getPaymentsByUser(userId: string): Promise<PaymentRecord[]> {
-  const q = query(
-    collection(db, paymentsCollection),
-    where("userId", "==", userId),
-    orderBy("createdAt", "desc")
-  );
+  // NOTE: no orderBy here — where + orderBy requires a composite index and
+  // fails silently in production. Sort client-side instead.
+  const q = query(collection(db, paymentsCollection), where("userId", "==", userId));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as PaymentRecord);
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }) as PaymentRecord)
+    .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
 }
 
 export async function getAllPayments(): Promise<PaymentRecord[]> {
