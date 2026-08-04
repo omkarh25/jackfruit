@@ -8,7 +8,6 @@ import {
   deleteDoc,
   query,
   where,
-  orderBy,
   serverTimestamp,
   type Timestamp,
 } from "firebase/firestore";
@@ -38,8 +37,11 @@ export interface BookingRecord {
 }
 
 export async function createBooking(data: Omit<BookingRecord, "id" | "createdAt" | "updatedAt">): Promise<string> {
+  const clean = Object.fromEntries(
+    Object.entries(data).filter(([, v]) => v !== undefined)
+  );
   const ref = await addDoc(collection(db, bookingsCollection), {
-    ...data,
+    ...clean,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });
@@ -55,8 +57,11 @@ export async function updateBooking(
   id: string,
   data: Partial<Omit<BookingRecord, "id" | "createdAt">>
 ): Promise<void> {
+  const clean = Object.fromEntries(
+    Object.entries(data).filter(([, v]) => v !== undefined)
+  );
   await updateDoc(doc(db, bookingsCollection, id), {
-    ...data,
+    ...clean,
     updatedAt: serverTimestamp(),
   });
 }
@@ -73,13 +78,13 @@ export async function deleteBooking(id: string): Promise<void> {
 }
 
 export async function getBookingsByUser(userId: string): Promise<BookingRecord[]> {
-  const q = query(
-    collection(db, bookingsCollection),
-    where("userId", "==", userId),
-    orderBy("createdAt", "desc")
-  );
+  // NOTE: no orderBy here — where + orderBy requires a composite index and
+  // fails silently in production. Sort client-side instead.
+  const q = query(collection(db, bookingsCollection), where("userId", "==", userId));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as BookingRecord);
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }) as BookingRecord)
+    .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
 }
 
 export async function getAllBookings(): Promise<BookingRecord[]> {
@@ -94,11 +99,11 @@ export async function getBookingsByStatus(status: BookingRecord["status"]): Prom
 }
 
 export async function getBookingsByEmail(email: string): Promise<BookingRecord[]> {
-  const q = query(
-    collection(db, bookingsCollection),
-    where("clientEmail", "==", email),
-    orderBy("createdAt", "desc")
-  );
+  // NOTE: no orderBy here — where + orderBy requires a composite index and
+  // fails silently in production. Sort client-side instead.
+  const q = query(collection(db, bookingsCollection), where("clientEmail", "==", email));
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as BookingRecord);
+  return snap.docs
+    .map((d) => ({ id: d.id, ...d.data() }) as BookingRecord)
+    .sort((a, b) => (b.createdAt?.toMillis?.() ?? 0) - (a.createdAt?.toMillis?.() ?? 0));
 }

@@ -133,26 +133,16 @@ export default function ServiceDetailPage({ params }: { params: { slug: string }
                     Enquire on WhatsApp
                   </a>
                 ) : (
-                  <>
-                    {price > 0 && (
-                      <div className="w-full sm:w-auto">
-                        <WorkshopPayButton
-                          workshopId={service.id || service.slug}
-                          workshopTitle={service.title}
-                          price={price}
-                          redirectUrl={service.paymentRedirectUrl}
-                        />
-                      </div>
-                    )}
-                    <a
-                      href={service.whatsappLink || DEFAULT_WHATSAPP}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn-secondary inline-flex"
-                    >
-                      Enquire on WhatsApp
-                    </a>
-                  </>
+                  price > 0 && (
+                    <div className="w-full sm:w-auto">
+                      <WorkshopPayButton
+                        workshopId={service.id || service.slug}
+                        workshopTitle={service.title}
+                        price={price}
+                        redirectUrl={service.paymentRedirectUrl}
+                      />
+                    </div>
+                  )
                 )
               ) : (
                 <button className="btn-primary inline-flex">

@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { GoogleLoginButton } from "@/components/auth/google-login-button";
 import { useAuth } from "@/components/auth/auth-provider";
-import { QuickNav } from "@/components/app-shell/quick-nav";
 
 const navItems = [
   { href: "/feeds", label: "Feeds" },
@@ -55,7 +54,6 @@ export function Navigation() {
           <GoogleLoginButton />
         </div>
       </nav>
-      <QuickNav />
     </header>
   );
 }

@@ -33,8 +33,11 @@ export function todayKey(): string {
 export async function addCheckin(
   data: Omit<WellnessCheckin, "id" | "createdAt">
 ): Promise<string> {
+  const clean = Object.fromEntries(
+    Object.entries(data).filter(([, v]) => v !== undefined)
+  );
   const ref = await addDoc(collection(db, checkinsCollection), {
-    ...data,
+    ...clean,
     createdAt: serverTimestamp(),
   });
   return ref.id;

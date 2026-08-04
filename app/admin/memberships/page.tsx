@@ -40,20 +40,47 @@ export default function AdminMembershipsPage() {
 
   const load = useCallback(async () => {
     setIsLoading(true);
+    let errors: string[] = [];
     try {
-      const [planList, memberList, userList, paymentList] = await Promise.all([
+      const [plansRes, membersRes, usersRes, paymentsRes] = await Promise.allSettled([
         getMembershipPlans(),
         getAllMemberships(),
         getAllUsers(),
         getAllPayments(),
       ]);
-      setPlans(planList);
-      setMemberships(memberList);
-      setUsers(new Map(userList.map((u) => [u.uid, u])));
-      setPayments(paymentList);
+
+      if (plansRes.status === "fulfilled") {
+        setPlans(plansRes.value);
+      } else {
+        console.error("Failed to load plans:", plansRes.reason);
+        errors.push(`plans: ${errorDetail(plansRes.reason)}`);
+      }
+
+      if (membersRes.status === "fulfilled") {
+        setMemberships(membersRes.value);
+      } else {
+        console.error("Failed to load members:", membersRes.reason);
+        errors.push(`members: ${errorDetail(membersRes.reason)}`);
+      }
+
+      if (usersRes.status === "fulfilled") {
+        setUsers(new Map(usersRes.value.map((u) => [u.uid, u])));
+      } else {
+        console.error("Failed to load users:", usersRes.reason);
+      }
+
+      if (paymentsRes.status === "fulfilled") {
+        setPayments(paymentsRes.value);
+      } else {
+        console.error("Failed to load payments:", paymentsRes.reason);
+      }
+
+      if (errors.length > 0) {
+        showMessage(`Failed to load some membership data (${errors.join(", ")})`, "error");
+      }
     } catch (e) {
       console.error(e);
-      showMessage("Failed to load membership data.", "error");
+      showMessage(`Failed to load membership data. ${errorDetail(e)}`, "error");
     } finally {
       setIsLoading(false);
     }
@@ -66,6 +93,12 @@ export default function AdminMembershipsPage() {
   function showMessage(text: string, type: "success" | "error") {
     setMessage({ text, type });
     setTimeout(() => setMessage(null), 4000);
+  }
+
+  // Surface the underlying Firestore error (e.g. "Missing or insufficient
+  // permissions.") so rule/config problems are diagnosable from the UI.
+  function errorDetail(e: unknown): string {
+    return e instanceof Error && e.message ? `(${e.message})` : "";
   }
 
   // ─── Plans tab ─────────────────────────────────────────────────────────────
@@ -91,7 +124,7 @@ export default function AdminMembershipsPage() {
       await load();
     } catch (e) {
       console.error(e);
-      showMessage("Failed to seed plans.", "error");
+      showMessage(`Failed to seed plans. ${errorDetail(e)}`, "error");
     } finally {
       setSeeding(false);
     }

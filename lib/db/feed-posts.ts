@@ -36,8 +36,12 @@ export async function createFeedPost(input: CreateFeedPostInput): Promise<string
   const db = getAdminDb();
   const ref = db.collection("feedPosts").doc();
   const now = new Date();
+  // Firestore rejects undefined values — strip them before writing.
+  const clean = Object.fromEntries(
+    Object.entries(input).filter(([, v]) => v !== undefined)
+  );
   await ref.set({
-    ...input,
+    ...clean,
     isActive: true,
     totalLikes: 0,
     totalShares: 0,
@@ -52,11 +56,14 @@ export async function updateFeedPost(
   input: Partial<Omit<FeedPost, "id" | "createdAt" | "createdByAdminId" | "createdByAdminName">>
 ): Promise<void> {
   const db = getAdminDb();
+  const clean = Object.fromEntries(
+    Object.entries(input).filter(([, v]) => v !== undefined)
+  );
   await db
     .collection("feedPosts")
     .doc(id)
     .update({
-      ...input,
+      ...clean,
       updatedAt: new Date(),
     });
 }

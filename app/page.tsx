@@ -275,19 +275,45 @@ export default function HomePage() {
             isFeatured: r.isFeatured ?? false,
             isApproved: r.isApproved ?? true,
             createdAt: r.createdAt?.toDate?.().toISOString() || new Date().toISOString(),
-          }))
-          // Show video testimonials first.
-          .sort((a, b) => {
-            if (a.type === "video" && b.type !== "video") return -1;
-            if (a.type !== "video" && b.type === "video") return 1;
-            return 0;
-          });
-        setTestimonials(mapped);
+          }));
+
+        const hasVideo = mapped.some((item) => item.type === "video");
+        const defaultVideos: TestimonialItem[] = [
+          {
+            id: "static-video-1",
+            type: "video",
+            name: "Client Story 1",
+            role: "Wellness Seeker",
+            mediaUrl: "/assets/testimonials/testimonial_1.mp4",
+            isFeatured: true,
+            isApproved: true,
+            createdAt: new Date().toISOString(),
+          },
+          {
+            id: "static-video-2",
+            type: "video",
+            name: "Client Story 2",
+            role: "Wellness Seeker",
+            mediaUrl: "/assets/testimonials/testimonial_2.mp4",
+            isFeatured: true,
+            isApproved: true,
+            createdAt: new Date().toISOString(),
+          },
+        ];
+
+        const combined = hasVideo ? mapped : [...mapped, ...defaultVideos];
+
+        // Show video testimonials first.
+        combined.sort((a, b) => {
+          if (a.type === "video" && b.type !== "video") return -1;
+          if (a.type !== "video" && b.type === "video") return 1;
+          return 0;
+        });
+
+        setTestimonials(combined);
         setTestimonialsLoaded(true);
       })
       .catch((err) => {
-        // Keep the static fallback, but surface the real error so data issues
-        // (permissions, missing fields) are visible instead of silent.
         console.error("Failed to load testimonials from Firestore:", err);
         setTestimonialsLoaded(true);
       });

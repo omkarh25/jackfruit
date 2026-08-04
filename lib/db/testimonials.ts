@@ -35,8 +35,12 @@ export interface TestimonialRecord {
 export async function createTestimonial(
   data: Omit<TestimonialRecord, "id" | "createdAt" | "updatedAt">
 ): Promise<string> {
+  // Firestore rejects undefined values — strip them before writing.
+  const clean = Object.fromEntries(
+    Object.entries(data).filter(([, v]) => v !== undefined)
+  );
   const ref = await addDoc(collection(db, testimonialsCollection), {
-    ...data,
+    ...clean,
     isApproved: data.isApproved ?? false,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
@@ -53,8 +57,12 @@ export async function updateTestimonial(
   id: string,
   data: Partial<Omit<TestimonialRecord, "id" | "createdAt">>
 ): Promise<void> {
+  // Firestore rejects undefined values — strip them before writing.
+  const clean = Object.fromEntries(
+    Object.entries(data).filter(([, v]) => v !== undefined)
+  );
   await updateDoc(doc(db, testimonialsCollection, id), {
-    ...data,
+    ...clean,
     updatedAt: serverTimestamp(),
   });
 }
@@ -64,9 +72,14 @@ export async function deleteTestimonial(id: string): Promise<void> {
 }
 
 export async function getAllTestimonials(): Promise<TestimonialRecord[]> {
-  const q = query(collection(db, testimonialsCollection), orderBy("createdAt", "desc"));
-  const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as TestimonialRecord);
+  // NOTE: no orderBy in query to avoid composite index failures. Sort client-side.
+  const snap = await getDocs(collection(db, testimonialsCollection));
+  const records = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as TestimonialRecord);
+  return records.sort((a, b) => {
+    const ta = a.createdAt?.toMillis?.() ?? 0;
+    const tb = b.createdAt?.toMillis?.() ?? 0;
+    return tb - ta;
+  });
 }
 
 export async function getApprovedTestimonials(): Promise<TestimonialRecord[]> {
@@ -87,12 +100,17 @@ export async function getApprovedTestimonials(): Promise<TestimonialRecord[]> {
 }
 
 export async function getFeaturedTestimonials(): Promise<TestimonialRecord[]> {
+  // NOTE: no orderBy here to avoid missing composite index errors.
   const q = query(
     collection(db, testimonialsCollection),
     where("isApproved", "==", true),
-    where("isFeatured", "==", true),
-    orderBy("createdAt", "desc")
+    where("isFeatured", "==", true)
   );
   const snap = await getDocs(q);
-  return snap.docs.map((d) => ({ id: d.id, ...d.data() }) as TestimonialRecord);
+  const records = snap.docs.map((d) => ({ id: d.id, ...d.data() }) as TestimonialRecord);
+  return records.sort((a, b) => {
+    const ta = a.createdAt?.toMillis?.() ?? 0;
+    const tb = b.createdAt?.toMillis?.() ?? 0;
+    return tb - ta;
+  });
 }

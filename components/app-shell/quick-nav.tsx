@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { getVisibleServices, type ServiceRecord } from "@/lib/db/services";
+import { services as staticServices } from "@/lib/data";
 
 /**
  * Secondary navigation bar rendered directly below the site header.
@@ -16,8 +17,38 @@ export function QuickNav() {
 
   useEffect(() => {
     getVisibleServices()
-      .then(setServices)
-      .catch(() => setServices([]));
+      .then((firestoreServices) => {
+        if (firestoreServices.length > 0) {
+          setServices(firestoreServices);
+        } else {
+          setServices(
+            staticServices.map((s) => ({
+              id: s.id,
+              title: s.title,
+              slug: s.slug,
+              description: s.description,
+              duration: s.duration,
+              price: s.price,
+              outcomes: [...s.outcomes],
+              isVisible: true,
+            }))
+          );
+        }
+      })
+      .catch(() => {
+        setServices(
+          staticServices.map((s) => ({
+            id: s.id,
+            title: s.title,
+            slug: s.slug,
+            description: s.description,
+            duration: s.duration,
+            price: s.price,
+            outcomes: [...s.outcomes],
+            isVisible: true,
+          }))
+        );
+      });
   }, []);
 
   // Close dropdown on outside click / Escape.
@@ -46,7 +77,7 @@ export function QuickNav() {
     <div className="border-b border-tattvam-purple-100 bg-white/90 backdrop-blur-md">
       <div
         ref={containerRef}
-        className="relative mx-auto flex max-w-7xl items-center justify-start gap-3 overflow-x-auto px-4 py-2.5 sm:justify-center sm:px-6"
+        className="relative mx-auto flex max-w-7xl flex-wrap items-center justify-start gap-3 px-4 py-2.5 sm:justify-center sm:px-6"
       >
         {/* Services dropdown */}
         <div
