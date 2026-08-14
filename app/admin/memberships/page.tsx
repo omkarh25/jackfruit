@@ -376,6 +376,11 @@ export default function AdminMembershipsPage() {
                               {TIER_META[t]?.name || t}
                             </option>
                           ))}
+                          {(m.tier as string) === "FLOW" && (
+                            <option value={m.tier}>
+                              {m.tier} (legacy)
+                            </option>
+                          )}
                         </select>
                       </td>
                       <td className="px-6 py-4 text-sm text-tattvam-purple-600 capitalize">{m.mode}</td>
