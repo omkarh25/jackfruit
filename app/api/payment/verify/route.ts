@@ -73,10 +73,6 @@ export async function POST(req: Request) {
       razorpaySignature: razorpay_signature,
       updatedAt: new Date(),
     };
-    if (paymentData?.couponCode && paymentData.discountAmount != null) {
-      update.couponCode = paymentData.couponCode;
-      update.discountAmount = paymentData.discountAmount;
-    }
     await paymentDoc.ref.update(update);
 
     // 3b. Track coupon usage.

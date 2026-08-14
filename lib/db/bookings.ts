@@ -12,6 +12,7 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { getFirestoreDb } from "@/lib/firebase";
+import { stripUndefined } from "./utils";
 
 const db = getFirestoreDb();
 const bookingsCollection = "bookings";
@@ -37,9 +38,7 @@ export interface BookingRecord {
 }
 
 export async function createBooking(data: Omit<BookingRecord, "id" | "createdAt" | "updatedAt">): Promise<string> {
-  const clean = Object.fromEntries(
-    Object.entries(data).filter(([, v]) => v !== undefined)
-  );
+  const clean = stripUndefined(data);
   const ref = await addDoc(collection(db, bookingsCollection), {
     ...clean,
     createdAt: serverTimestamp(),
@@ -57,9 +56,7 @@ export async function updateBooking(
   id: string,
   data: Partial<Omit<BookingRecord, "id" | "createdAt">>
 ): Promise<void> {
-  const clean = Object.fromEntries(
-    Object.entries(data).filter(([, v]) => v !== undefined)
-  );
+  const clean = stripUndefined(data);
   await updateDoc(doc(db, bookingsCollection, id), {
     ...clean,
     updatedAt: serverTimestamp(),

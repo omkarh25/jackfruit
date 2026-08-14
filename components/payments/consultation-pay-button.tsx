@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createRazorpayInstance } from "@/lib/razorpay-client";
 import { LOGGER } from "@/lib/logger";
 import { PaymentFailedModal } from "./payment-failed-modal";
 import { CouponApplier, type AppliedCouponDetails } from "./coupon-applier";
@@ -138,7 +139,7 @@ export function ConsultationPayButton({
         },
       };
 
-      const rzp = new (window as unknown as { Razorpay: new (opts: typeof options) => { open: () => void; on: (event: string, cb: () => void) => void } }).Razorpay(options);
+      const rzp = createRazorpayInstance(options);
 
       rzp.on("payment.failed", () => {
         setShowFailed(true);

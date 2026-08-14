@@ -15,10 +15,9 @@ import {
   type MembershipTier,
 } from "@/lib/membership-pricing";
 
-const TIERS: MembershipTier[] = ["FLOW", "RISE", "INNER CIRCLE"];
+const TIERS: MembershipTier[] = ["RISE", "INNER CIRCLE"];
 
 const TIER_DESCRIPTIONS: Record<MembershipTier, string> = {
-  FLOW: "Entry Level — Get your body and energy moving",
   RISE: "Transformation Level — Shift patterns. Experience real change.",
   "INNER CIRCLE": "Premium — Your life, guided personally",
 };
@@ -311,9 +310,6 @@ export default function ProjectAnandaPricingPage() {
                         <th className="px-4 py-3 text-left font-semibold text-tattvam-purple-800">
                           Feature
                         </th>
-                        <th className="px-4 py-3 text-center font-semibold text-tattvam-purple-700">
-                          Flow
-                        </th>
                         <th className="px-4 py-3 text-center font-semibold text-tattvam-gold-700">
                           Rise
                         </th>
@@ -327,9 +323,6 @@ export default function ProjectAnandaPricingPage() {
                         <tr key={row.feature} className="border-t border-tattvam-purple-100">
                           <td className="px-4 py-2.5 text-left text-tattvam-purple-800">
                             {row.feature}
-                          </td>
-                          <td className="px-4 py-2.5 text-center">
-                            <FeatureValue value={row.flow} />
                           </td>
                           <td className="px-4 py-2.5 text-center">
                             <FeatureValue value={row.rise} />

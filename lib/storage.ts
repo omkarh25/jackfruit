@@ -1,11 +1,39 @@
-import { ref, uploadBytes, getDownloadURL, deleteObject } from "firebase/storage";
+import { ref, uploadBytesResumable, getDownloadURL, deleteObject } from "firebase/storage";
 import { getFirebaseStorage } from "./firebase";
 
-export async function uploadFile(file: File, path: string): Promise<string> {
+const UPLOAD_TIMEOUT_MS = 120_000;
+
+export async function uploadFile(
+  file: File,
+  path: string,
+  onProgress?: (progress: number) => void
+): Promise<string> {
   const storage = getFirebaseStorage();
   const storageRef = ref(storage, path);
-  await uploadBytes(storageRef, file);
-  return getDownloadURL(storageRef);
+  const uploadTask = uploadBytesResumable(storageRef, file);
+
+  return new Promise((resolve, reject) => {
+    const timeout = setTimeout(() => {
+      uploadTask.cancel();
+      reject(new Error("Upload timed out. Please try again."));
+    }, UPLOAD_TIMEOUT_MS);
+
+    uploadTask.on(
+      "state_changed",
+      (snapshot) => {
+        const progress = snapshot.bytesTransferred / snapshot.totalBytes;
+        onProgress?.(progress);
+      },
+      (error) => {
+        clearTimeout(timeout);
+        reject(error);
+      },
+      () => {
+        clearTimeout(timeout);
+        getDownloadURL(uploadTask.snapshot.ref).then(resolve).catch(reject);
+      }
+    );
+  });
 }
 
 export async function deleteFileByUrl(url: string): Promise<void> {

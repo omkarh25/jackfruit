@@ -21,7 +21,6 @@ interface ApplicableOption {
 
 const GENERIC_OPTIONS: ApplicableOption[] = [
   { value: "consultation", label: "1:1 Consultation" },
-  { value: "FLOW", label: "Membership: Ananda Flow" },
   { value: "RISE", label: "Membership: Ananda Rise" },
   { value: "INNER CIRCLE", label: "Membership: Ananda Inner Circle" },
 ];

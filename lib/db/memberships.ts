@@ -11,6 +11,7 @@ import {
 } from "firebase/firestore";
 import { getFirestoreDb } from "@/lib/firebase";
 import type { MembershipMode, MembershipTier } from "@/lib/membership-pricing";
+import { stripUndefined } from "./utils";
 
 const db = getFirestoreDb();
 const membershipsCollection = "memberships";
@@ -53,9 +54,7 @@ export async function getMembershipPlans(): Promise<MembershipPlan[]> {
 export async function createMembershipPlan(
   data: Omit<MembershipPlan, "id" | "createdAt" | "updatedAt">
 ): Promise<string> {
-  const clean = Object.fromEntries(
-    Object.entries(data).filter(([, v]) => v !== undefined)
-  );
+  const clean = stripUndefined(data);
   const ref = await addDoc(collection(db, plansCollection), {
     ...clean,
     createdAt: serverTimestamp(),
@@ -68,9 +67,7 @@ export async function updateMembershipPlan(
   id: string,
   data: Partial<Omit<MembershipPlan, "id" | "createdAt">>
 ): Promise<void> {
-  const clean = Object.fromEntries(
-    Object.entries(data).filter(([, v]) => v !== undefined)
-  );
+  const clean = stripUndefined(data);
   await updateDoc(doc(db, plansCollection, id), {
     ...clean,
     updatedAt: serverTimestamp(),
@@ -104,9 +101,7 @@ export async function updateMembership(
   id: string,
   data: Partial<Omit<MembershipRecord, "id" | "createdAt">>
 ): Promise<void> {
-  const clean = Object.fromEntries(
-    Object.entries(data).filter(([, v]) => v !== undefined)
-  );
+  const clean = stripUndefined(data);
   await updateDoc(doc(db, membershipsCollection, id), {
     ...clean,
     updatedAt: serverTimestamp(),

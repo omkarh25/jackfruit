@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createRazorpayInstance } from "@/lib/razorpay-client";
 import { useAuth } from "@/components/auth/auth-provider";
 import { LOGGER } from "@/lib/logger";
 import { PaymentSuccessModal } from "./payment-success-modal";
@@ -134,7 +135,7 @@ export function WorkshopPayButton({
         },
       };
 
-      const rzp = new (window as unknown as { Razorpay: new (opts: typeof options) => { open: () => void; on: (event: string, cb: () => void) => void } }).Razorpay(options);
+      const rzp = createRazorpayInstance(options);
 
       rzp.on("payment.failed", () => {
         setShowFailed(true);

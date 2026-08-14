@@ -1,7 +1,7 @@
 import { getAdminDb } from "@/lib/firebase-admin";
 import type { Timestamp } from "firebase/firestore";
 
-export type AttendanceStatus = "P" | "A" | "ML";
+export type AttendanceStatus = "P" | "L" | "E" | "A" | "ML";
 
 export interface AttendanceRecord {
   id?: string;
@@ -226,12 +226,14 @@ export async function getAttendanceSummary(
   itemType: AttendanceRecord["itemType"],
   itemId: string,
   sessionDate: string
-): Promise<{ total: number; present: number; absent: number; medicalLeave: number; attendancePercentage: number }> {
+): Promise<{ total: number; present: number; late: number; excused: number; absent: number; medicalLeave: number; attendancePercentage: number }> {
   const records = await getAttendanceBySession(itemType, itemId, sessionDate);
   const present = records.filter((r) => r.attendanceStatus === "P").length;
+  const late = records.filter((r) => r.attendanceStatus === "L").length;
+  const excused = records.filter((r) => r.attendanceStatus === "E").length;
   const absent = records.filter((r) => r.attendanceStatus === "A").length;
   const medicalLeave = records.filter((r) => r.attendanceStatus === "ML").length;
   const total = records.length;
   const attendancePercentage = total > 0 ? Math.round((present / total) * 100) : 0;
-  return { total, present, absent, medicalLeave, attendancePercentage };
+  return { total, present, late, excused, absent, medicalLeave, attendancePercentage };
 }

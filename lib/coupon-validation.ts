@@ -1,4 +1,5 @@
 import { getAdminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 
 export interface CouponRecordAdmin {
   code: string;
@@ -169,9 +170,5 @@ export async function incrementCouponUsageAdmin(code: string): Promise<void> {
   if (!code) return;
   const db = getAdminDb();
   const ref = db.collection("coupons").doc(code.trim().toUpperCase());
-  const snap = await ref.get();
-  if (snap.exists) {
-    const current = snap.data() as CouponRecordAdmin;
-    await ref.update({ usageCount: (current.usageCount ?? 0) + 1 });
-  }
+  await ref.update({ usageCount: FieldValue.increment(1) });
 }

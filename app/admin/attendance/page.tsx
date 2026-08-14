@@ -33,7 +33,7 @@ interface AttendanceRecord {
   itemId: string;
   itemName: string;
   sessionDate: string;
-  attendanceStatus: "P" | "A" | "ML";
+  attendanceStatus: "P" | "L" | "E" | "A" | "ML";
   remarks?: string;
   markedByAdminName: string;
   markedDateTime: string;
@@ -49,11 +49,19 @@ const TABS: { value: Tab; label: string }[] = [
   { value: "report", label: "Service-wise Report" },
 ];
 
-const STATUS_LABELS: Record<string, string> = { P: "Present", A: "Absent", ML: "Medical Leave" };
+const STATUS_LABELS: Record<string, string> = {
+  P: "Present",
+  L: "Late",
+  E: "Excused",
+  A: "Absent",
+  ML: "Medical Leave",
+};
 const STATUS_CLASSES: Record<string, string> = {
-  P: "bg-green-100 text-green-700",
-  A: "bg-red-100 text-red-700",
-  ML: "bg-yellow-100 text-yellow-700",
+  P: "bg-green-100 text-green-700 border-green-200",
+  L: "bg-amber-100 text-amber-700 border-amber-200",
+  E: "bg-blue-100 text-blue-700 border-blue-200",
+  A: "bg-red-100 text-red-700 border-red-200",
+  ML: "bg-yellow-100 text-yellow-700 border-yellow-200",
 };
 
 function classNames(...classes: (string | false | null | undefined)[]) {
@@ -88,12 +96,27 @@ export default function AdminAttendancePage() {
   const [activeTab, setActiveTab] = useState<Tab>("mark");
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
 
-  // Mark attendance state
+  // Session-based report state (history/report tabs still use sessions)
   const [sessions, setSessions] = useState<Session[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
-  const [selectedSession, setSelectedSession] = useState<Session | null>(null);
-  const [registrations, setRegistrations] = useState<Registration[]>([]);
-  const [markLoading, setMarkLoading] = useState(false);
+
+  // Daily attendance state
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  });
+  const [dailyMembers, setDailyMembers] = useState<
+    {
+      userId: string;
+      userName: string;
+      email: string;
+      membership?: { tier: string; mode: string; expiryDate: string; startDate: string };
+      attendanceStatus?: string;
+      remarks?: string;
+    }[]
+  >([]);
+  const [dailyLoading, setDailyLoading] = useState(false);
+  const [dailySaving, setDailySaving] = useState(false);
 
   // History state
   const [historyRecords, setHistoryRecords] = useState<AttendanceRecord[]>([]);
@@ -106,6 +129,8 @@ export default function AdminAttendancePage() {
   const [reportSummary, setReportSummary] = useState({
     total: 0,
     present: 0,
+    late: 0,
+    excused: 0,
     absent: 0,
     medicalLeave: 0,
     attendancePercentage: 0,
@@ -115,18 +140,32 @@ export default function AdminAttendancePage() {
 
   // Edit modal
   const [editingRecord, setEditingRecord] = useState<AttendanceRecord | null>(null);
-  const [editStatus, setEditStatus] = useState<"P" | "A" | "ML">("P");
+  const [editStatus, setEditStatus] = useState<"P" | "L" | "E" | "A" | "ML">("P");
   const [editRemarks, setEditRemarks] = useState("");
 
   useEffect(() => {
     loadSessions();
     loadHistory();
+    loadDailyAttendance();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    if (activeTab === "mark") {
+      loadDailyAttendance();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate, activeTab]);
 
   function showMessage(text: string, type: "success" | "error") {
     setMessage({ text, type });
     setTimeout(() => setMessage(null), 5000);
+  }
+
+  function formatMembershipDate(value: string): string {
+    if (!value) return "—";
+    const d = new Date(value);
+    return isNaN(d.getTime()) ? value : d.toLocaleDateString("en-IN");
   }
 
   async function fetchWithAuth(url: string, options?: RequestInit): Promise<Response> {
@@ -154,78 +193,82 @@ export default function AdminAttendancePage() {
     }
   }
 
-  async function openMarkSession(session: Session) {
-    setSelectedSession(session);
-    setMarkLoading(true);
+  async function loadDailyAttendance() {
+    setDailyLoading(true);
     try {
-      const res = await fetchWithAuth(`/api/admin/attendance/sessions/${session.id}/registrations`);
+      const res = await fetchWithAuth(`/api/admin/attendance/daily?date=${selectedDate}`);
       const data = await res.json();
       if (res.ok) {
-        setRegistrations(
-          (data.registrations || []).map((r: Registration) => ({
-            ...r,
-            attendanceStatus: r.attendanceStatus || "",
-            remarks: r.remarks || "",
+        const attendanceByUser = (data.attendanceByUser || {}) as Record<
+          string,
+          { status: string; remarks?: string }
+        >;
+        setDailyMembers(
+          (data.members || []).map((m: typeof dailyMembers[0]) => ({
+            ...m,
+            attendanceStatus: attendanceByUser[m.userId]?.status || "",
+            remarks: attendanceByUser[m.userId]?.remarks || "",
           }))
         );
+      } else {
+        showMessage(data.error || "Failed to load daily attendance", "error");
       }
     } catch (e) {
-      LOGGER.error("Failed to load registrations", { error: String(e) });
-      showMessage("Failed to load registrations", "error");
+      LOGGER.error("Failed to load daily attendance", { error: String(e) });
+      showMessage("Failed to load daily attendance", "error");
     } finally {
-      setMarkLoading(false);
+      setDailyLoading(false);
     }
   }
 
-  function updateRegistrationStatus(userId: string, status: string) {
-    setRegistrations((prev) =>
-      prev.map((r) => (r.userId === userId ? { ...r, attendanceStatus: status } : r))
-    );
-  }
-
-  function updateRegistrationRemarks(userId: string, remarks: string) {
-    setRegistrations((prev) =>
-      prev.map((r) => (r.userId === userId ? { ...r, remarks } : r))
-    );
-  }
-
-  function markAll(status: string) {
-    setRegistrations((prev) => prev.map((r) => ({ ...r, attendanceStatus: status })));
-  }
-
-  async function saveAttendance() {
-    if (!selectedSession) return;
-    const recordsToSave = registrations.filter((r) => r.attendanceStatus);
+  async function saveDailyAttendance() {
+    const recordsToSave = dailyMembers.filter((m) => m.attendanceStatus);
     if (recordsToSave.length === 0) {
-      showMessage("Please mark status for at least one participant", "error");
+      showMessage("Please mark status for at least one member", "error");
       return;
     }
 
-    setMarkLoading(true);
+    setDailySaving(true);
     try {
-      const res = await fetchWithAuth(`/api/admin/attendance/sessions/${selectedSession.id}/attendance`, {
+      const res = await fetchWithAuth("/api/admin/attendance/daily", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          records: recordsToSave.map((r) => ({
-            userId: r.userId,
-            userName: r.userName,
-            email: r.email,
-            status: r.attendanceStatus,
-            remarks: r.remarks,
+          date: selectedDate,
+          records: recordsToSave.map((m) => ({
+            userId: m.userId,
+            userName: m.userName,
+            email: m.email,
+            status: m.attendanceStatus,
+            remarks: m.remarks,
           })),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to save attendance");
       showMessage("Attendance saved successfully", "success");
-      setSelectedSession(null);
       loadHistory();
     } catch (e) {
       showMessage(e instanceof Error ? e.message : "Failed to save attendance", "error");
     } finally {
-      setMarkLoading(false);
+      setDailySaving(false);
     }
+  }
+
+  function updateDailyStatus(userId: string, status: string) {
+    setDailyMembers((prev) =>
+      prev.map((m) => (m.userId === userId ? { ...m, attendanceStatus: status } : m))
+    );
+  }
+
+  function updateDailyRemarks(userId: string, remarks: string) {
+    setDailyMembers((prev) =>
+      prev.map((m) => (m.userId === userId ? { ...m, remarks } : m))
+    );
+  }
+
+  function markAllDaily(status: string) {
+    setDailyMembers((prev) => prev.map((m) => ({ ...m, attendanceStatus: status })));
   }
 
   async function loadHistory() {
@@ -294,7 +337,7 @@ export default function AdminAttendancePage() {
   }
 
   return (
-    <AdminShell title="Attendance" subtitle="Mark and review attendance for workshops and consultations">
+    <AdminShell title="Attendance" subtitle="Mark daily attendance for active members and review session reports">
       {message && (
         <div
           className={classNames(
@@ -325,43 +368,125 @@ export default function AdminAttendancePage() {
 
       {activeTab === "mark" && (
         <div className="rounded-2xl bg-white p-6 shadow-soft">
-          <h2 className="mb-4 font-serif text-xl font-bold text-tattvam-purple-900">Upcoming Sessions</h2>
-          {sessionsLoading ? (
-            <div className="py-12 text-center text-tattvam-purple-400">Loading sessions...</div>
-          ) : sessions.length === 0 ? (
-            <div className="py-12 text-center text-tattvam-purple-400">No upcoming sessions found.</div>
-          ) : (
-            <div className="overflow-x-auto rounded-xl border border-tattvam-purple-100">
-              <table className="w-full min-w-[640px] text-left text-sm">
-                <thead className="bg-tattvam-purple-50">
-                  <tr>
-                    <th className="px-6 py-4 font-semibold text-tattvam-purple-800">Name</th>
-                    <th className="px-6 py-4 font-semibold text-tattvam-purple-800">Type</th>
-                    <th className="px-6 py-4 font-semibold text-tattvam-purple-800">Date</th>
-                    <th className="px-6 py-4 font-semibold text-tattvam-purple-800">Registered</th>
-                    <th className="px-6 py-4 font-semibold text-tattvam-purple-800">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sessions.map((s) => (
-                    <tr key={s.id} className="border-b border-tattvam-purple-50 transition hover:bg-tattvam-purple-50/50">
-                      <td className="px-6 py-4 font-medium text-tattvam-purple-800">{s.itemName}</td>
-                      <td className="px-6 py-4 text-tattvam-purple-600 capitalize">{s.itemType}</td>
-                      <td className="px-6 py-4 text-tattvam-purple-600">{s.sessionDateDisplay}</td>
-                      <td className="px-6 py-4 text-tattvam-purple-600">{s.registeredCount}</td>
-                      <td className="px-6 py-4">
-                        <button
-                          onClick={() => openMarkSession(s)}
-                          className="rounded-lg bg-tattvam-purple-100 px-3 py-1.5 text-xs font-medium text-tattvam-purple-600 hover:bg-tattvam-purple-200"
-                        >
-                          Mark Attendance
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+          <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 className="font-serif text-xl font-bold text-tattvam-purple-900">Mark Attendance</h2>
+              <p className="text-sm text-tattvam-purple-500">Mark attendance for active members.</p>
             </div>
+            <div className="flex items-center gap-3">
+              <label className="text-sm font-medium text-tattvam-purple-700">Date</label>
+              <input
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                className="rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm text-tattvam-purple-800 focus:border-tattvam-purple-400 focus:outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="mb-4 flex flex-wrap gap-2">
+            {[
+              { status: "P", label: "Mark All Present" },
+              { status: "L", label: "Mark All Late" },
+              { status: "E", label: "Mark All Excused" },
+              { status: "A", label: "Mark All Absent" },
+            ].map(({ status, label }) => (
+              <button
+                key={status}
+                onClick={() => markAllDaily(status)}
+                className={classNames(
+                  "rounded-lg px-3 py-1.5 text-xs font-medium transition",
+                  STATUS_CLASSES[status].replace("bg-", "bg-opacity-80 hover:bg-opacity-100 ")
+                )}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {dailyLoading ? (
+            <div className="py-12 text-center text-tattvam-purple-400">Loading members...</div>
+          ) : dailyMembers.length === 0 ? (
+            <div className="py-12 text-center text-tattvam-purple-400">No active members found for this date.</div>
+          ) : (
+            <>
+              <div className="overflow-x-auto rounded-xl border border-tattvam-purple-100">
+                <table className="w-full min-w-[768px] text-left text-sm">
+                  <thead className="bg-tattvam-purple-50">
+                    <tr>
+                      <th className="px-4 py-3 font-semibold text-tattvam-purple-800">Member</th>
+                      <th className="px-4 py-3 font-semibold text-tattvam-purple-800">Membership</th>
+                      <th className="px-4 py-3 font-semibold text-tattvam-purple-800">Status</th>
+                      <th className="px-4 py-3 font-semibold text-tattvam-purple-800">Remarks</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {dailyMembers.map((m) => (
+                      <tr key={m.userId} className="border-b border-tattvam-purple-50">
+                        <td className="px-4 py-3">
+                          <p className="font-medium text-tattvam-purple-800">{m.userName}</p>
+                          <p className="text-xs text-tattvam-purple-500">{m.email}</p>
+                        </td>
+                        <td className="px-4 py-3 text-tattvam-purple-600">
+                          {m.membership ? (
+                            <div className="text-xs">
+                              <p className="font-medium capitalize">{m.membership.tier} — {m.membership.mode}</p>
+                              <p className="text-tattvam-purple-400">
+                                {formatMembershipDate(m.membership.startDate)} → {formatMembershipDate(m.membership.expiryDate)}
+                              </p>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-tattvam-purple-400">No active membership</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex flex-wrap gap-1.5">
+                            {[
+                              { value: "P", label: "Present" },
+                              { value: "L", label: "Late" },
+                              { value: "E", label: "Excused" },
+                              { value: "A", label: "Absent" },
+                            ].map(({ value, label }) => (
+                              <button
+                                key={value}
+                                onClick={() => updateDailyStatus(m.userId, m.attendanceStatus === value ? "" : value)}
+                                className={classNames(
+                                  "rounded-full border px-2.5 py-1 text-xs font-medium transition",
+                                  m.attendanceStatus === value
+                                    ? STATUS_CLASSES[value]
+                                    : "border-tattvam-purple-200 text-tattvam-purple-600 hover:bg-tattvam-purple-50"
+                                )}
+                              >
+                                {label}
+                              </button>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-4 py-3">
+                          <input
+                            type="text"
+                            value={m.remarks || ""}
+                            onChange={(e) => updateDailyRemarks(m.userId, e.target.value)}
+                            placeholder="Optional"
+                            className="w-full rounded-lg border border-tattvam-purple-200 px-2 py-1 text-sm focus:border-tattvam-purple-400 focus:outline-none"
+                          />
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={saveDailyAttendance}
+                  disabled={dailySaving || dailyMembers.filter((m) => m.attendanceStatus).length === 0}
+                  className="btn-primary text-sm disabled:opacity-60"
+                >
+                  {dailySaving ? "Saving…" : "Save Attendance"}
+                </button>
+              </div>
+            </>
           )}
         </div>
       )}
@@ -385,6 +510,8 @@ export default function AdminAttendancePage() {
               >
                 <option value="">All statuses</option>
                 <option value="P">Present</option>
+                <option value="L">Late</option>
+                <option value="E">Excused</option>
                 <option value="A">Absent</option>
                 <option value="ML">Medical Leave</option>
               </select>
@@ -485,10 +612,12 @@ export default function AdminAttendancePage() {
                   <h3 className="mb-4 font-serif text-lg font-bold text-tattvam-purple-900">
                     {reportSession.itemName} — {reportSession.sessionDateDisplay}
                   </h3>
-                  <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  <div className="mb-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-6">
                     {[
                       { label: "Total", value: reportSummary.total, color: "text-tattvam-purple-800" },
                       { label: "Present", value: reportSummary.present, color: "text-green-700" },
+                      { label: "Late", value: reportSummary.late, color: "text-amber-700" },
+                      { label: "Excused", value: reportSummary.excused, color: "text-blue-700" },
                       { label: "Absent", value: reportSummary.absent, color: "text-red-700" },
                       { label: "Medical Leave", value: reportSummary.medicalLeave, color: "text-yellow-700" },
                     ].map((card) => (
@@ -544,95 +673,6 @@ export default function AdminAttendancePage() {
         </div>
       )}
 
-      {/* Mark Attendance Modal */}
-      {selectedSession && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
-          <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-2xl bg-white p-6 shadow-xl">
-            <h3 className="font-serif text-xl font-bold text-tattvam-purple-900">
-              Mark Attendance — {selectedSession.itemName}
-            </h3>
-            <p className="text-sm text-tattvam-purple-600">{selectedSession.sessionDateDisplay}</p>
-
-            <div className="mb-4 mt-4 flex gap-2">
-              <button
-                onClick={() => markAll("P")}
-                className="rounded-lg bg-green-100 px-3 py-1.5 text-xs font-medium text-green-700 hover:bg-green-200"
-              >
-                Mark All Present
-              </button>
-              <button
-                onClick={() => markAll("A")}
-                className="rounded-lg bg-red-100 px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-200"
-              >
-                Mark All Absent
-              </button>
-            </div>
-
-            {markLoading ? (
-              <div className="py-12 text-center text-tattvam-purple-400">Loading participants...</div>
-            ) : (
-              <div className="overflow-x-auto rounded-xl border border-tattvam-purple-100">
-                <table className="w-full text-left text-sm">
-                  <thead className="bg-tattvam-purple-50">
-                    <tr>
-                      <th className="px-4 py-3 font-semibold text-tattvam-purple-800">Name</th>
-                      <th className="px-4 py-3 font-semibold text-tattvam-purple-800">Email</th>
-                      <th className="px-4 py-3 font-semibold text-tattvam-purple-800">Status</th>
-                      <th className="px-4 py-3 font-semibold text-tattvam-purple-800">Remarks</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {registrations.map((r) => (
-                      <tr key={r.userId} className="border-b border-tattvam-purple-50">
-                        <td className="px-4 py-3 text-tattvam-purple-800">{r.userName}</td>
-                        <td className="px-4 py-3 text-tattvam-purple-600">{r.email}</td>
-                        <td className="px-4 py-3">
-                          <select
-                            value={r.attendanceStatus}
-                            onChange={(e) => updateRegistrationStatus(r.userId, e.target.value)}
-                            className="rounded-lg border border-tattvam-purple-200 px-2 py-1 text-sm focus:border-tattvam-purple-400 focus:outline-none"
-                          >
-                            <option value="">—</option>
-                            <option value="P">Present</option>
-                            <option value="A">Absent</option>
-                            <option value="ML">Medical Leave</option>
-                          </select>
-                        </td>
-                        <td className="px-4 py-3">
-                          <input
-                            type="text"
-                            value={r.remarks}
-                            onChange={(e) => updateRegistrationRemarks(r.userId, e.target.value)}
-                            placeholder="Optional"
-                            className="w-full rounded-lg border border-tattvam-purple-200 px-2 py-1 text-sm focus:border-tattvam-purple-400 focus:outline-none"
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-
-            <div className="mt-6 flex justify-end gap-3">
-              <button
-                onClick={() => setSelectedSession(null)}
-                className="rounded-xl border border-tattvam-purple-200 px-5 py-2.5 text-sm font-medium text-tattvam-purple-600 hover:bg-tattvam-purple-50"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveAttendance}
-                disabled={markLoading || registrations.filter((r) => r.attendanceStatus).length === 0}
-                className="btn-primary text-sm disabled:opacity-60"
-              >
-                {markLoading ? "Saving…" : "Save Attendance"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Edit Modal */}
       {editingRecord && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
@@ -646,10 +686,12 @@ export default function AdminAttendancePage() {
                 <label className="mb-1 block text-sm font-medium text-tattvam-purple-700">Status</label>
                 <select
                   value={editStatus}
-                  onChange={(e) => setEditStatus(e.target.value as "P" | "A" | "ML")}
+                  onChange={(e) => setEditStatus(e.target.value as "P" | "L" | "E" | "A" | "ML")}
                   className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm focus:border-tattvam-purple-400 focus:outline-none"
                 >
                   <option value="P">Present</option>
+                  <option value="L">Late</option>
+                  <option value="E">Excused</option>
                   <option value="A">Absent</option>
                   <option value="ML">Medical Leave</option>
                 </select>

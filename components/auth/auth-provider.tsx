@@ -78,8 +78,8 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
 
     // Sync to Firestore immediately after login
     try {
-      const existing = await getUserProfile(user.uid);
-      if (!existing) {
+      let firestoreProfile = await getUserProfile(user.uid);
+      if (!firestoreProfile) {
         await upsertUserProfile(user.uid, {
           uid: user.uid,
           name: user.displayName ?? "Tatvam Learner",
@@ -87,8 +87,8 @@ export function AuthProvider({ children }: Readonly<{ children: React.ReactNode 
           photoURL: user.photoURL ?? undefined,
           role: "learner",
         });
+        firestoreProfile = await getUserProfile(user.uid);
       }
-      const firestoreProfile = await getUserProfile(user.uid);
       setProfile(firestoreProfile ? toUserProfile(firestoreProfile) : null);
     } catch (err) {
       LOGGER.error("Failed to sync login to Firestore", { error: String(err) });

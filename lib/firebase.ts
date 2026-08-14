@@ -15,7 +15,7 @@ const firebaseConfig = {
 /**
  * Returns the singleton Firebase app instance for auth/storage/firestore integrations.
  */
-export function getFirebaseApp(): FirebaseApp {
+function getFirebaseApp(): FirebaseApp {
   return getApps().length > 0 ? getApps()[0] : initializeApp(firebaseConfig);
 }
 

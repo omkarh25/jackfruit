@@ -30,6 +30,7 @@ export default function AdminTestimonialsPage() {
   const [search, setSearch] = useState("");
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -75,20 +76,39 @@ export default function AdminTestimonialsPage() {
     setIsModalOpen(true);
   }
 
+  const MAX_FILE_SIZE_MB = 20;
+
+  function sanitizeFileName(name: string): string {
+    return name
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/[^a-zA-Z0-9._-]/g, "_")
+      .replace(/_{2,}/g, "_");
+  }
+
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
+
+    if (file.size > MAX_FILE_SIZE_MB * 1024 * 1024) {
+      showMessage(`File is too large. Maximum allowed size is ${MAX_FILE_SIZE_MB} MB.`, "error");
+      return;
+    }
+
     setUploading(true);
+    setUploadProgress(0);
     try {
-      const path = `testimonials/${Date.now()}_${file.name}`;
-      const url = await uploadFile(file, path);
+      const safeName = sanitizeFileName(file.name);
+      const path = `testimonials/${Date.now()}_${safeName}`;
+      const url = await uploadFile(file, path, setUploadProgress);
       setForm((f) => ({ ...f, mediaUrl: url }));
       showMessage("File uploaded successfully.", "success");
     } catch (err) {
       console.error(err);
-      showMessage("Failed to upload file.", "error");
+      showMessage(err instanceof Error ? err.message : "Failed to upload file.", "error");
     } finally {
       setUploading(false);
+      setUploadProgress(0);
     }
   }
 
@@ -355,7 +375,11 @@ export default function AdminTestimonialsPage() {
                     onChange={handleFileChange}
                     className="w-full rounded-xl border border-tattvam-purple-200 px-4 py-2 text-sm file:mr-4 file:rounded-full file:border-0 file:bg-tattvam-purple-100 file:px-4 file:py-1.5 file:text-sm file:font-medium file:text-tattvam-purple-700 hover:file:bg-tattvam-purple-200"
                   />
-                  {uploading && <p className="mt-1 text-xs text-tattvam-purple-500">Uploading...</p>}
+                  {uploading && (
+                    <p className="mt-1 text-xs text-tattvam-purple-500">
+                      Uploading… {Math.round(uploadProgress * 100)}%
+                    </p>
+                  )}
                   {form.mediaUrl && (
                     <div className="mt-2">
                       {form.type === "image" ? (

@@ -1,6 +1,5 @@
 "use client";
 
-import type { User } from "firebase/auth";
 import type { UserProfile } from "./types";
 
 const profileKeyPrefix = "jackfruit.profile";
@@ -10,27 +9,6 @@ const profileKeyPrefix = "jackfruit.profile";
  */
 function getProfileKey(uid: string): string {
   return `${profileKeyPrefix}.${uid}`;
-}
-
-/**
- * Creates or updates a learner profile from the Firebase user session.
- */
-export function upsertProfileFromFirebaseUser(user: User): UserProfile {
-  const now = new Date().toISOString();
-  const existing = getStoredProfile(user.uid);
-  const profile: UserProfile = {
-    uid: user.uid,
-    name: user.displayName ?? "Tatvam Learner",
-    email: user.email ?? "",
-    photoURL: user.photoURL ?? undefined,
-    purchasedCourseIds: existing?.purchasedCourseIds ?? [],
-    bookingIds: existing?.bookingIds ?? [],
-    createdAt: existing?.createdAt ?? now,
-    updatedAt: now
-  };
-
-  saveProfile(profile);
-  return profile;
 }
 
 /**

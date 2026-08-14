@@ -1,4 +1,5 @@
 import { getAdminDb } from "@/lib/firebase-admin";
+import { FieldValue } from "firebase-admin/firestore";
 import type { Timestamp } from "firebase/firestore";
 
 export type FeedMediaType = "text" | "image" | "video";
@@ -101,17 +102,11 @@ export async function getAllFeedPosts(): Promise<FeedPost[]> {
 export async function incrementFeedPostLikes(id: string, delta: number): Promise<void> {
   const db = getAdminDb();
   const ref = db.collection("feedPosts").doc(id);
-  const snap = await ref.get();
-  if (!snap.exists) return;
-  const current = (snap.data()?.totalLikes as number) || 0;
-  await ref.update({ totalLikes: Math.max(0, current + delta) });
+  await ref.update({ totalLikes: FieldValue.increment(delta) });
 }
 
 export async function incrementFeedPostShares(id: string): Promise<void> {
   const db = getAdminDb();
   const ref = db.collection("feedPosts").doc(id);
-  const snap = await ref.get();
-  if (!snap.exists) return;
-  const current = (snap.data()?.totalShares as number) || 0;
-  await ref.update({ totalShares: current + 1 });
+  await ref.update({ totalShares: FieldValue.increment(1) });
 }

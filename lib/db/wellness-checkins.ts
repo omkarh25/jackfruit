@@ -8,6 +8,7 @@ import {
   type Timestamp,
 } from "firebase/firestore";
 import { getFirestoreDb } from "@/lib/firebase";
+import { stripUndefined } from "./utils";
 
 const db = getFirestoreDb();
 const checkinsCollection = "wellnessCheckins";
@@ -33,9 +34,7 @@ export function todayKey(): string {
 export async function addCheckin(
   data: Omit<WellnessCheckin, "id" | "createdAt">
 ): Promise<string> {
-  const clean = Object.fromEntries(
-    Object.entries(data).filter(([, v]) => v !== undefined)
-  );
+  const clean = stripUndefined(data);
   const ref = await addDoc(collection(db, checkinsCollection), {
     ...clean,
     createdAt: serverTimestamp(),

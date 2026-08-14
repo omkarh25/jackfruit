@@ -44,8 +44,3 @@ export async function deleteFeedLike(likeId: string): Promise<void> {
   await db.collection("feedLikes").doc(likeId).delete();
 }
 
-export async function getLikesByPost(feedPostId: string): Promise<FeedLike[]> {
-  const db = getAdminDb();
-  const snap = await db.collection("feedLikes").where("feedPostId", "==", feedPostId).get();
-  return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() } as FeedLike));
-}

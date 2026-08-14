@@ -22,3 +22,4 @@ export * from "./courses";
 export * from "./testimonials";
 export * from "./coupons";
 export * from "./slots";
+export * from "./utils";

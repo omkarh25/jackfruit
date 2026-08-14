@@ -1,31 +1,4 @@
-import type { BookingSlot, Course, FeedItem, ServiceOffering, Workshop } from "./types";
-
-/**
- * Seed content used by the MVP learner app until the database layer is connected.
- */
-export const feedItems: readonly FeedItem[] = [
-  {
-    id: "feed-1",
-    title: "New pranayama workshop opens this week",
-    description: "Join the guided breathwork circle for better sleep, digestion, and calm focus.",
-    tag: "Workshop",
-    publishedAt: "Today"
-  },
-  {
-    id: "feed-2",
-    title: "Ayurvedic daily routine checklist",
-    description: "A practical dinacharya checklist has been added to your resources library.",
-    tag: "Resource",
-    publishedAt: "Yesterday"
-  },
-  {
-    id: "feed-3",
-    title: "Book your 1:1 consultation slot",
-    description: "Limited consultation windows are available for personalized wellness planning.",
-    tag: "Booking",
-    publishedAt: "2 days ago"
-  }
-];
+import type { Course, ServiceOffering, Workshop } from "./types";
 
 export const services: readonly ServiceOffering[] = [
   {
@@ -72,6 +45,15 @@ export const services: readonly ServiceOffering[] = [
     duration: "3 sessions",
     price: "₹4,999",
     outcomes: ["Practice plan", "Live guidance", "Progress review"]
+  },
+  {
+    id: "service-6",
+    slug: "kalaripayattu",
+    title: "Kalari Payattu",
+    description: "The ancient martial and healing art of Kerala — build strength, agility, discipline, and self-defense through traditional Kalari training, online or in person.",
+    duration: "Ongoing program",
+    price: "Starting at ₹2,880/month",
+    outcomes: ["Traditional Kalari movements", "Strength & flexibility", "Self-defense techniques"]
   }
 ];
 
@@ -165,9 +147,3 @@ export function getCourseBySlug(slug: string): Course | undefined {
 export function getWorkshopBySlug(slug: string): Workshop | undefined {
   return workshops.find((workshop) => workshop.slug === slug);
 }
-
-export const bookingSlots: readonly BookingSlot[] = [
-  { id: "slot-1", date: "Mon, 29 Apr", time: "10:00 AM", status: "Available" },
-  { id: "slot-2", date: "Wed, 1 May", time: "5:30 PM", status: "Filling fast" },
-  { id: "slot-3", date: "Sat, 4 May", time: "11:30 AM", status: "Available" }
-];

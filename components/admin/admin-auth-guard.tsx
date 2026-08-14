@@ -15,6 +15,8 @@ const ADMIN_ONLY_PATHS = [
   "/admin/notifications",
   "/admin/offers",
   "/admin/media",
+  "/admin/memberships",
+  "/admin/attendance",
 ];
 
 const COACH_ALLOWED_PATHS = ["/admin/consultations"];

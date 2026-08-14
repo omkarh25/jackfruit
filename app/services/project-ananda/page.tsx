@@ -191,53 +191,9 @@ export default function ProjectAnandaPage() {
             </div>
           </Reveal>
 
-          <div className="grid gap-8 md:grid-cols-3">
-            {/* Card 1: Ananda Flow */}
+          <div className="grid gap-8 md:grid-cols-2">
+            {/* Card 1: Ananda Rise (Most Recommended) */}
             <Reveal delay={100}>
-              <div className="glass-card-dark flex h-full flex-col rounded-3xl p-8">
-                <h3 className="font-serif text-2xl font-semibold text-tattvam-gold-400">
-                  Ananda Flow
-                </h3>
-                <p className="mt-2 text-sm font-medium text-tattvam-purple-300">
-                  Entry Level
-                </p>
-                <p className="mt-4 text-purple-100/80">
-                  Get your body and energy moving
-                </p>
-                <ul className="mt-6 space-y-3 text-purple-100/80">
-                  {[
-                    "Daily Yoga & Kalari",
-                    "Group practices",
-                    "Trataka, Animal Walks, Laughter",
-                    "1 Open Healing Session",
-                    "Community Day (optional)",
-                    "3-Step Diagnosis",
-                    "Event access",
-                  ].map((feature) => (
-                    <li key={feature} className="flex items-start gap-2">
-                      <span className="mt-1 text-tattvam-gold-400">✓</span>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-                <div className="mt-6 rounded-xl bg-tattvam-purple-800/50 p-4">
-                  <p className="text-sm text-tattvam-purple-200">
-                    <span className="text-tattvam-gold-400">Focus:</span> Discipline, consistency, movement
-                  </p>
-                </div>
-                <div className="mt-auto pt-8">
-                  <a
-                    href="/services/project-ananda/pricing"
-                    className="btn-secondary block w-full text-center"
-                  >
-                    View Plans
-                  </a>
-                </div>
-              </div>
-            </Reveal>
-
-            {/* Card 2: Ananda Rise (Most Recommended) */}
-            <Reveal delay={200}>
               <div className="relative flex h-full flex-col rounded-3xl border-2 border-tattvam-gold-400 bg-gradient-to-b from-tattvam-purple-800 to-tattvam-purple-900 p-8">
                 <div className="absolute -top-4 left-1/2 -translate-x-1/2 rounded-full bg-tattvam-gold-400 px-4 py-1 text-xs font-bold text-tattvam-purple-900">
                   Most Recommended
@@ -253,7 +209,7 @@ export default function ProjectAnandaPage() {
                 </p>
                 <ul className="mt-6 space-y-3 text-purple-100/80">
                   {[
-                    "Everything in Flow",
+                    "Daily Yoga & Kalari",
                     "Weekly Emotional Healing",
                     "Personalized guidance",
                     "Priority access",

@@ -1,13 +1,3 @@
-export type AppSection = "feeds" | "services" | "workshops" | "courses" | "booking";
-
-export interface FeedItem {
-  readonly id: string;
-  readonly title: string;
-  readonly description: string;
-  readonly tag: string;
-  readonly publishedAt: string;
-}
-
 export interface ServiceOffering {
   readonly id: string;
   readonly slug: string;
@@ -52,13 +42,6 @@ export interface CourseVideo {
   readonly title: string;
   readonly duration: string;
   readonly src: string;
-}
-
-export interface BookingSlot {
-  readonly id: string;
-  readonly date: string;
-  readonly time: string;
-  readonly status: "Available" | "Filling fast";
 }
 
 export type TestimonialType = "text" | "video" | "image";

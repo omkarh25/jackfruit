@@ -104,7 +104,7 @@ export default function AdminMembershipsPage() {
   // ─── Plans tab ─────────────────────────────────────────────────────────────
 
   async function handleSeedDefaults() {
-    if (!confirm("Create the default plan set (3 tiers × 4 durations) from the standard pricing?")) return;
+    if (!confirm("Create the default plan set (2 tiers × 4 durations) from the standard pricing?")) return;
     setSeeding(true);
     try {
       for (const tier of TIERS) {
