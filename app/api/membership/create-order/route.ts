@@ -7,9 +7,10 @@ import {
   type MembershipMode,
   type MembershipTier,
 } from "@/lib/membership-pricing";
+import { getKalariPrice } from "@/lib/kalari-pricing";
 
 export interface CreateMembershipOrderRequest {
-  membershipType: MembershipTier;
+  membershipType: MembershipTier | string;
   durationMonths: number;
   mode?: MembershipMode;
   userId: string;
@@ -31,7 +32,7 @@ export interface CreateMembershipOrderResponse {
 /**
  * POST /api/membership/create-order
  *
- * Creates a Razorpay Order for a Project Ananda membership using the
+ * Creates a Razorpay Order for a Project Ananda or Kalari Payattu membership using the
  * predefined price table. No slot or booking is involved.
  */
 export async function POST(req: Request) {
@@ -47,7 +48,15 @@ export async function POST(req: Request) {
       );
     }
 
-    const priceInRupees = getMembershipPrice(membershipType, durationMonths, mode);
+    const isKalari =
+      membershipType === "KALARI" ||
+      membershipType === "Kalari Payattu" ||
+      membershipType === "KALARI_PAYATTU";
+
+    const priceInRupees = isKalari
+      ? getKalariPrice(durationMonths, mode)
+      : getMembershipPrice(membershipType as MembershipTier, durationMonths, mode);
+
     if (!priceInRupees || priceInRupees <= 0) {
       return NextResponse.json(
         { error: "Invalid membership plan or duration" },
@@ -78,8 +87,10 @@ export async function POST(req: Request) {
       appliedCouponCode = couponResult.couponCode;
     }
 
-    const receipt = `pa_${membershipType.toLowerCase().replace(/\s/g, "-")}_${durationMonths}m_${Date.now()}`.slice(0, 40);
-    const itemTitle = `Project Ananda — ${membershipType} — ${durationMonths} Month${durationMonths > 1 ? "s" : ""} (${mode === "online" ? "Online" : "Offline"})`;
+    const receipt = `${isKalari ? "kalari" : "pa"}_${membershipType.toLowerCase().replace(/\s/g, "-")}_${durationMonths}m_${Date.now()}`.slice(0, 40);
+    const itemTitle = isKalari
+      ? `Kalari Payattu — ${durationMonths} Month${durationMonths > 1 ? "s" : ""} (${mode === "online" ? "Online" : "Offline"})`
+      : `Project Ananda — ${membershipType} — ${durationMonths} Month${durationMonths > 1 ? "s" : ""} (${mode === "online" ? "Online" : "Offline"})`;
 
     const order = await createRazorpayOrder({
       amountInRupees: finalAmountInRupees,
@@ -103,7 +114,9 @@ export async function POST(req: Request) {
       currency: order.currency,
       status: "created",
       itemType: "membership",
-      itemId: `project-ananda-${membershipType.toLowerCase().replace(/\s/g, "-")}-${durationMonths}m-${mode}`,
+      itemId: isKalari
+        ? `kalari-payattu-${durationMonths}m-${mode}`
+        : `project-ananda-${membershipType.toLowerCase().replace(/\s/g, "-")}-${durationMonths}m-${mode}`,
       itemTitle,
       membershipTier: membershipType,
       durationMonths,

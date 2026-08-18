@@ -1,24 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "@/components/auth/auth-provider";
 import { AdminShell } from "@/components/admin/admin-shell";
 import { StatCard } from "@/components/admin/stat-card";
 import {
-  getMembershipPlans,
-  createMembershipPlan,
-  updateMembershipPlan,
-  getAllMemberships,
-  updateMembership,
+  fetchAdminMembershipsApi,
+  seedDefaultPlansApi,
+  updateMembershipPlanApi,
+  extendMembershipApi,
+  updateMembershipTierApi,
   computeMembershipStatus,
   type MembershipPlan,
   type MembershipRecord,
 } from "@/lib/db/memberships";
-import { getAllUsers, type FirestoreUserProfile } from "@/lib/db/users";
-import { getAllPayments, type PaymentRecord } from "@/lib/db/payments";
+import type { FirestoreUserProfile } from "@/lib/db/users";
+import type { PaymentRecord } from "@/lib/db/payments";
 import {
-  MEMBERSHIP_DURATIONS,
-  OFFLINE_PRICES,
-  ONLINE_PRICES,
   TIER_META,
   type MembershipTier,
 } from "@/lib/membership-pricing";
@@ -28,6 +26,7 @@ const TIERS = Object.keys(TIER_META) as MembershipTier[];
 type Tab = "plans" | "members" | "reports";
 
 export default function AdminMembershipsPage() {
+  const { firebaseUser } = useAuth();
   const [tab, setTab] = useState<Tab>("members");
   const [plans, setPlans] = useState<MembershipPlan[]>([]);
   const [memberships, setMemberships] = useState<MembershipRecord[]>([]);
@@ -39,52 +38,23 @@ export default function AdminMembershipsPage() {
   const [memberFilter, setMemberFilter] = useState<"all" | "active" | "expiring" | "expired">("all");
 
   const load = useCallback(async () => {
+    if (!firebaseUser) return;
     setIsLoading(true);
-    let errors: string[] = [];
     try {
-      const [plansRes, membersRes, usersRes, paymentsRes] = await Promise.allSettled([
-        getMembershipPlans(),
-        getAllMemberships(),
-        getAllUsers(),
-        getAllPayments(),
-      ]);
-
-      if (plansRes.status === "fulfilled") {
-        setPlans(plansRes.value);
-      } else {
-        console.error("Failed to load plans:", plansRes.reason);
-        errors.push(`plans: ${errorDetail(plansRes.reason)}`);
-      }
-
-      if (membersRes.status === "fulfilled") {
-        setMemberships(membersRes.value);
-      } else {
-        console.error("Failed to load members:", membersRes.reason);
-        errors.push(`members: ${errorDetail(membersRes.reason)}`);
-      }
-
-      if (usersRes.status === "fulfilled") {
-        setUsers(new Map(usersRes.value.map((u) => [u.uid, u])));
-      } else {
-        console.error("Failed to load users:", usersRes.reason);
-      }
-
-      if (paymentsRes.status === "fulfilled") {
-        setPayments(paymentsRes.value);
-      } else {
-        console.error("Failed to load payments:", paymentsRes.reason);
-      }
-
-      if (errors.length > 0) {
-        showMessage(`Failed to load some membership data (${errors.join(", ")})`, "error");
-      }
+      const token = await firebaseUser.getIdToken();
+      const data = await fetchAdminMembershipsApi(token);
+      setPlans(data.plans);
+      setMemberships(data.memberships);
+      setUsers(new Map(data.users.map((u) => [u.uid, u])));
+      setPayments(data.payments);
     } catch (e) {
-      console.error(e);
-      showMessage(`Failed to load membership data. ${errorDetail(e)}`, "error");
+      console.error("Failed to load admin membership data:", e);
+      const errMessage = e instanceof Error ? e.message : "Failed to load membership data.";
+      showMessage(errMessage, "error");
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [firebaseUser]);
 
   useEffect(() => {
     load();
@@ -95,36 +65,21 @@ export default function AdminMembershipsPage() {
     setTimeout(() => setMessage(null), 4000);
   }
 
-  // Surface the underlying Firestore error (e.g. "Missing or insufficient
-  // permissions.") so rule/config problems are diagnosable from the UI.
-  function errorDetail(e: unknown): string {
-    return e instanceof Error && e.message ? `(${e.message})` : "";
-  }
-
   // ─── Plans tab ─────────────────────────────────────────────────────────────
 
   async function handleSeedDefaults() {
     if (!confirm("Create the default plan set (2 tiers × 4 durations) from the standard pricing?")) return;
+    if (!firebaseUser) return;
     setSeeding(true);
     try {
-      for (const tier of TIERS) {
-        for (const months of MEMBERSHIP_DURATIONS) {
-          const exists = plans.some((p) => p.tier === tier && p.durationMonths === months);
-          if (exists) continue;
-          await createMembershipPlan({
-            tier,
-            durationMonths: months,
-            priceOnline: ONLINE_PRICES[tier][months],
-            priceOffline: OFFLINE_PRICES[tier][months],
-            active: true,
-          });
-        }
-      }
-      showMessage("Default plans created.", "success");
+      const token = await firebaseUser.getIdToken();
+      const msg = await seedDefaultPlansApi(token);
+      showMessage(msg, "success");
       await load();
     } catch (e) {
       console.error(e);
-      showMessage(`Failed to seed plans. ${errorDetail(e)}`, "error");
+      const errMessage = e instanceof Error ? e.message : "Failed to seed plans.";
+      showMessage(errMessage, "error");
     } finally {
       setSeeding(false);
     }
@@ -132,10 +87,12 @@ export default function AdminMembershipsPage() {
 
   async function handlePlanPriceChange(plan: MembershipPlan, field: "priceOnline" | "priceOffline", value: string) {
     const price = parseInt(value.replace(/[^0-9]/g, ""), 10);
-    if (!plan.id || isNaN(price) || price <= 0) return;
+    if (!plan.id || isNaN(price) || price <= 0 || !firebaseUser) return;
     try {
-      await updateMembershipPlan(plan.id, { [field]: price });
+      const token = await firebaseUser.getIdToken();
+      await updateMembershipPlanApi(token, plan.id, { [field]: price });
       setPlans(plans.map((p) => (p.id === plan.id ? { ...p, [field]: price } : p)));
+      showMessage("Price updated successfully.", "success");
     } catch (e) {
       console.error(e);
       showMessage("Failed to update plan price.", "error");
@@ -143,10 +100,12 @@ export default function AdminMembershipsPage() {
   }
 
   async function handlePlanToggle(plan: MembershipPlan) {
-    if (!plan.id) return;
+    if (!plan.id || !firebaseUser) return;
     try {
-      await updateMembershipPlan(plan.id, { active: !plan.active });
+      const token = await firebaseUser.getIdToken();
+      await updateMembershipPlanApi(token, plan.id, { active: !plan.active });
       setPlans(plans.map((p) => (p.id === plan.id ? { ...p, active: !p.active } : p)));
+      showMessage(`Plan ${!plan.active ? "activated" : "deactivated"}.`, "success");
     } catch (e) {
       console.error(e);
       showMessage("Failed to update plan.", "error");
@@ -156,16 +115,17 @@ export default function AdminMembershipsPage() {
   // ─── Members tab ───────────────────────────────────────────────────────────
 
   async function handleExtend(m: MembershipRecord) {
-    if (!m.id) return;
+    if (!m.id || !firebaseUser) return;
     const input = prompt("Extend expiry by how many months?", "1");
     if (!input) return;
     const months = parseInt(input, 10);
     if (isNaN(months) || months === 0) return;
     try {
+      const token = await firebaseUser.getIdToken();
       const expiry = new Date(m.expiryDate);
       expiry.setMonth(expiry.getMonth() + months);
-      await updateMembership(m.id, { expiryDate: expiry.toISOString(), status: "active" });
-      showMessage("Membership extended.", "success");
+      await extendMembershipApi(token, m.id, expiry.toISOString(), "active");
+      showMessage("Membership extended successfully.", "success");
       await load();
     } catch (e) {
       console.error(e);
@@ -174,10 +134,11 @@ export default function AdminMembershipsPage() {
   }
 
   async function handleTierChange(m: MembershipRecord, tier: MembershipTier) {
-    if (!m.id) return;
+    if (!m.id || !firebaseUser) return;
     try {
-      await updateMembership(m.id, { tier });
-      showMessage("Tier updated.", "success");
+      const token = await firebaseUser.getIdToken();
+      await updateMembershipTierApi(token, m.id, tier);
+      showMessage("Tier updated successfully.", "success");
       setMemberships(memberships.map((x) => (x.id === m.id ? { ...x, tier } : x)));
     } catch (e) {
       console.error(e);

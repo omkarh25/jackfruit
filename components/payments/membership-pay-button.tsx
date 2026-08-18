@@ -8,11 +8,12 @@ import {
   type MembershipMode,
   type MembershipTier,
 } from "@/lib/membership-pricing";
+import { getKalariPrice } from "@/lib/kalari-pricing";
 import { PaymentFailedModal } from "./payment-failed-modal";
 import { CouponApplier, type AppliedCouponDetails } from "./coupon-applier";
 
 export interface MembershipPayButtonProps {
-  membershipType: MembershipTier;
+  membershipType: MembershipTier | string;
   durationMonths: number;
   mode: MembershipMode;
   userId: string;
@@ -43,7 +44,13 @@ export function MembershipPayButton({
   const [showFailed, setShowFailed] = useState(false);
   const [appliedCoupon, setAppliedCoupon] = useState<AppliedCouponDetails | null>(null);
 
-  const originalPrice = getMembershipPrice(membershipType, durationMonths, mode);
+  const isKalari =
+    membershipType === "KALARI" ||
+    membershipType === "Kalari Payattu" ||
+    membershipType === "KALARI_PAYATTU";
+  const originalPrice = isKalari
+    ? getKalariPrice(durationMonths, mode)
+    : getMembershipPrice(membershipType as MembershipTier, durationMonths, mode);
   const effectiveCouponCode = externalCouponCode || appliedCoupon?.couponCode;
   const finalAmount = appliedCoupon?.finalAmount ?? originalPrice;
 
@@ -82,7 +89,9 @@ export function MembershipPayButton({
         amount: orderData.amount,
         currency: orderData.currency,
         name: "Tattvam Wellness Center",
-        description: `Project Ananda — ${membershipType} — ${durationMonths} Month${durationMonths > 1 ? "s" : ""} (${mode === "online" ? "Online" : "Offline"})`,
+        description: isKalari
+          ? `Kalari Payattu — ${durationMonths} Month${durationMonths > 1 ? "s" : ""} (${mode === "online" ? "Online" : "Offline"})`
+          : `Project Ananda — ${membershipType} — ${durationMonths} Month${durationMonths > 1 ? "s" : ""} (${mode === "online" ? "Online" : "Offline"})`,
         order_id: orderData.orderId,
         prefill: {
           name: customerName,
@@ -175,7 +184,11 @@ export function MembershipPayButton({
       </button>
       {showFailed && (
         <PaymentFailedModal
-          itemName={`Project Ananda — ${membershipType}`}
+          itemName={
+            isKalari
+              ? `Kalari Payattu — ${durationMonths} Month${durationMonths > 1 ? "s" : ""}`
+              : `Project Ananda — ${membershipType}`
+          }
           onClose={() => setShowFailed(false)}
           onRetry={() => {
             setShowFailed(false);

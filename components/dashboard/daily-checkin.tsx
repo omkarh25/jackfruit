@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "@/components/auth/auth-provider";
 import {
   addCheckin,
   getCheckinsByUser,
@@ -85,6 +86,7 @@ function TrendChart({
 }
 
 export function DailyCheckin({ userId }: { userId: string }) {
+  const { firebaseUser } = useAuth();
   const [todayEntry, setTodayEntry] = useState<WellnessCheckin | null>(null);
   const [history, setHistory] = useState<WellnessCheckin[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -93,12 +95,16 @@ export function DailyCheckin({ userId }: { userId: string }) {
   const [sleep, setSleep] = useState(3);
   const [gratitude, setGratitude] = useState("");
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ text: string; isError: boolean } | null>(null);
 
   const load = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [today, all] = await Promise.all([getTodayCheckin(userId), getCheckinsByUser(userId)]);
+      const token = await firebaseUser?.getIdToken();
+      const [today, all] = await Promise.all([
+        getTodayCheckin(userId, token),
+        getCheckinsByUser(userId, token),
+      ]);
       setTodayEntry(today);
       setHistory(all);
     } catch (e) {
@@ -106,7 +112,7 @@ export function DailyCheckin({ userId }: { userId: string }) {
     } finally {
       setIsLoading(false);
     }
-  }, [userId]);
+  }, [userId, firebaseUser]);
 
   useEffect(() => {
     load();
@@ -115,14 +121,20 @@ export function DailyCheckin({ userId }: { userId: string }) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSaving(true);
+    setMessage(null);
     try {
-      await addCheckin({ userId, date: todayKey(), mood, energy, sleep, gratitude: gratitude.trim() });
-      setMessage("Check-in saved. Have a mindful day! 🌿");
+      const token = await firebaseUser?.getIdToken();
+      await addCheckin(
+        { userId, date: todayKey(), mood, energy, sleep, gratitude: gratitude.trim() },
+        token
+      );
+      setMessage({ text: "Check-in saved. Have a mindful day! 🌿", isError: false });
       setTimeout(() => setMessage(null), 5000);
       await load();
     } catch (err) {
-      console.error(err);
-      setMessage("Could not save your check-in. Please try again.");
+      console.error("Save checkin failed:", err);
+      const errText = err instanceof Error ? err.message : "Could not save your check-in. Please try again.";
+      setMessage({ text: errText, isError: true });
     } finally {
       setSaving(false);
     }
@@ -138,7 +150,13 @@ export function DailyCheckin({ userId }: { userId: string }) {
       <h2 className="font-serif text-xl font-bold text-tattvam-purple-900">Daily Wellness Check-in</h2>
 
       {message && (
-        <p className="mt-3 rounded-xl bg-green-100 px-4 py-2 text-sm font-medium text-green-700">{message}</p>
+        <p
+          className={`mt-3 rounded-xl px-4 py-2 text-sm font-medium ${
+            message.isError ? "bg-red-100 text-red-700" : "bg-green-100 text-green-700"
+          }`}
+        >
+          {message.text}
+        </p>
       )}
 
       {!todayEntry ? (

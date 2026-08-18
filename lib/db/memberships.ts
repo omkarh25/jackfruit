@@ -12,6 +12,8 @@ import {
 import { getFirestoreDb } from "@/lib/firebase";
 import type { MembershipMode, MembershipTier } from "@/lib/membership-pricing";
 import { stripUndefined } from "./utils";
+import type { PaymentRecord } from "./payments";
+import type { FirestoreUserProfile } from "./users";
 
 const db = getFirestoreDb();
 const membershipsCollection = "memberships";
@@ -42,7 +44,106 @@ export interface MembershipRecord {
   updatedAt?: Timestamp;
 }
 
-// ─── Plans ───────────────────────────────────────────────────────────────────
+export interface AdminMembershipsData {
+  plans: MembershipPlan[];
+  memberships: MembershipRecord[];
+  users: FirestoreUserProfile[];
+  payments: PaymentRecord[];
+}
+
+// ─── Admin API Helpers ────────────────────────────────────────────────────────
+
+export async function fetchAdminMembershipsApi(token: string): Promise<AdminMembershipsData> {
+  const res = await fetch("/api/admin/memberships", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.error || "Failed to load admin membership data.");
+  }
+  return {
+    plans: json.plans || [],
+    memberships: json.memberships || [],
+    users: json.users || [],
+    payments: json.payments || [],
+  };
+}
+
+export async function seedDefaultPlansApi(token: string): Promise<string> {
+  const res = await fetch("/api/admin/memberships", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ action: "seed" }),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.error || "Failed to seed default plans.");
+  }
+  return json.message || "Default plans seeded.";
+}
+
+export async function updateMembershipPlanApi(
+  token: string,
+  planId: string,
+  data: Partial<Omit<MembershipPlan, "id" | "createdAt">>
+): Promise<void> {
+  const res = await fetch("/api/admin/memberships", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ action: "updatePlan", planId, data }),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.error || "Failed to update plan.");
+  }
+}
+
+export async function extendMembershipApi(
+  token: string,
+  membershipId: string,
+  expiryDate: string,
+  status = "active"
+): Promise<void> {
+  const res = await fetch("/api/admin/memberships", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ action: "extend", membershipId, expiryDate, status }),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.error || "Failed to extend membership.");
+  }
+}
+
+export async function updateMembershipTierApi(
+  token: string,
+  membershipId: string,
+  tier: MembershipTier
+): Promise<void> {
+  const res = await fetch("/api/admin/memberships", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ action: "updateTier", membershipId, tier }),
+  });
+  const json = await res.json();
+  if (!res.ok || !json.success) {
+    throw new Error(json.error || "Failed to update membership tier.");
+  }
+}
+
+// ─── Direct Firestore Client Methods (with API fallbacks) ────────────────────
 
 export async function getMembershipPlans(): Promise<MembershipPlan[]> {
   const snap = await getDocs(collection(db, plansCollection));
@@ -73,8 +174,6 @@ export async function updateMembershipPlan(
     updatedAt: serverTimestamp(),
   });
 }
-
-// ─── Memberships ─────────────────────────────────────────────────────────────
 
 export async function getMembershipsByUser(userId: string): Promise<MembershipRecord[]> {
   const q = query(collection(db, membershipsCollection), where("userId", "==", userId));
