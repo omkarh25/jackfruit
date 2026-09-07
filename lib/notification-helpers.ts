@@ -261,3 +261,121 @@ export async function sendPaymentFailedEmail(details: PaymentFailedDetails): Pro
     console.error("[notification] Failed to send payment failed email:", err);
   }
 }
+
+// ─── Admin payment notification ────────────────────────────────────────────
+
+export interface AdminPaymentNotificationDetails {
+  /** Human-readable type label for the email subject/body. */
+  itemType: "consultation" | "workshop" | "course" | "membership";
+  /** Display title of the item that was purchased. */
+  itemTitle: string;
+  /** Order / payment id from Razorpay. */
+  orderId: string;
+  /** Payment id from Razorpay (after capture). */
+  razorpayPaymentId?: string;
+  /** Amount in paise (e.g. 55500 for ₹555). */
+  amount?: number;
+  /** Display amount as a string (e.g. "₹555") — preferred when available. */
+  amountDisplay?: string;
+  /** Customer name from the booking/user record. */
+  customerName: string;
+  /** Customer email (admin-facing detail). */
+  customerEmail: string;
+  /** Customer phone if available. */
+  customerPhone?: string;
+  /** For consultations: booking date / time string. */
+  date?: string;
+  time?: string;
+  /** Optional extra context the caller wants in the email (e.g. meeting link). */
+  extras?: Record<string, string | undefined>;
+}
+
+/**
+ * Builds the subject line for the admin payment notification. Exported so it
+ * can be unit-tested without invoking SMTP.
+ */
+export function adminPaymentSubject(details: AdminPaymentNotificationDetails): string {
+  const label =
+    details.itemType === "consultation"
+      ? "1:1 Consultation"
+      : details.itemType.charAt(0).toUpperCase() + details.itemType.slice(1);
+  return `[ADMIN] New ${label} Payment — ${details.itemTitle}`;
+}
+
+/**
+ * Builds the admin payment notification HTML. Pure / side-effect-free so it
+ * can be unit-tested independently.
+ */
+export function adminPaymentEmailTemplate(details: AdminPaymentNotificationDetails): string {
+  const rupees = details.amountDisplay
+    ? details.amountDisplay
+    : details.amount != null
+    ? `₹${(details.amount / 100).toLocaleString("en-IN")}`
+    : "—";
+
+  const extrasHtml = details.extras
+    ? Object.entries(details.extras)
+        .filter(([, value]) => Boolean(value))
+        .map(
+          ([key, value]) =>
+            `<p><strong>${escapeHtml(key)}:</strong> ${escapeHtml(String(value))}</p>`
+        )
+        .join("")
+    : "";
+
+  const content = `
+    <p>Hi Admin,</p>
+    <p>A new payment was just captured on Tattvam Niramaya. Here are the details:</p>
+    <div class="details">
+      <p><strong>Type:</strong> ${escapeHtml(details.itemType)}</p>
+      <p><strong>Item:</strong> ${escapeHtml(details.itemTitle)}</p>
+      <p><strong>Amount:</strong> ${escapeHtml(rupees)}</p>
+      <p><strong>Razorpay Order ID:</strong> ${escapeHtml(details.orderId)}</p>
+      ${details.razorpayPaymentId ? `<p><strong>Razorpay Payment ID:</strong> ${escapeHtml(details.razorpayPaymentId)}</p>` : ""}
+      <p><strong>Customer Name:</strong> ${escapeHtml(details.customerName || "—")}</p>
+      <p><strong>Customer Email:</strong> ${escapeHtml(details.customerEmail || "—")}</p>
+      ${details.customerPhone ? `<p><strong>Customer Phone:</strong> ${escapeHtml(details.customerPhone)}</p>` : ""}
+      ${details.date ? `<p><strong>Date:</strong> ${escapeHtml(details.date)}${details.time ? ` at ${escapeHtml(details.time)}` : ""}</p>` : ""}
+      ${extrasHtml ? `<div style="margin-top:8px;">${extrasHtml}</div>` : ""}
+    </div>
+    <p>View all payments in the <a href="${BASE_URL}/admin/payments">admin dashboard</a>.</p>
+  `;
+  return baseTemplate(content);
+}
+
+/**
+ * Escape user-controlled strings before interpolating into HTML email bodies.
+ */
+function escapeHtml(input: string): string {
+  return input
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+/**
+ * Sends a one-way notification email to the business inbox whenever a payment
+ * is captured. Safe to call multiple times — failures are logged but never
+ * thrown, so the calling verify-route can still return success to the user.
+ */
+export async function sendAdminPaymentNotification(
+  details: AdminPaymentNotificationDetails
+): Promise<void> {
+  try {
+    const html = adminPaymentEmailTemplate(details);
+    const subject = adminPaymentSubject(details);
+    await sendEmail({
+      to: BUSINESS_EMAIL,
+      subject,
+      html,
+    });
+    console.log(
+      `[notification] Admin payment notification sent for ${details.itemType} ${details.itemTitle} (${details.orderId})`
+    );
+  } catch (err) {
+    // Notification must never break the payment flow — log and swallow.
+    console.error("[notification] Failed to send admin payment notification:", err);
+  }
+}

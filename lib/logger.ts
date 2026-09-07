@@ -7,10 +7,10 @@ type LogContext = Record<string, unknown>;
 export const LOGGER = {
   info(message: string, context?: LogContext): void {
     if (process.env.NODE_ENV !== "production") {
-      console.info(`[Jackfruit] ${message}`, context ?? {});
+      console.info(`[Tattvam Niramaya Academy] ${message}`, context ?? {});
     }
   },
   error(message: string, context?: LogContext): void {
-    console.error(`[Jackfruit] ${message}`, context ?? {});
+    console.error(`[Tattvam Niramaya Academy] ${message}`, context ?? {});
   }
 };

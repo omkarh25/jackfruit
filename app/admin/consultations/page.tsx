@@ -18,6 +18,8 @@ import {
   type SlotRecord,
 } from "@/lib/db/slots";
 import { getUserByEmail, getAllUsers, type FirestoreUserProfile } from "@/lib/db/users";
+import { useAuth } from "@/components/auth/auth-provider";
+import type { SlotSeedResult } from "@/lib/db/slot-seeding";
 
 const emptyBooking: Omit<BookingRecord, "id" | "createdAt" | "updatedAt"> = {
   userId: "admin",
@@ -71,6 +73,12 @@ export default function AdminConsultationsPage() {
   const [statusFilter, setStatusFilter] = useState("All Status");
   const [message, setMessage] = useState<{ text: string; type: "success" | "error" } | null>(null);
   const [selectedDate, setSelectedDate] = useState<string>("");
+
+  // Bulk-slot-generation state.
+  const { firebaseUser } = useAuth();
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [lastSeedResult, setLastSeedResult] =
+    useState<(SlotSeedResult & { error?: string }) | null>(null);
 
   useEffect(() => {
     loadData();
@@ -255,6 +263,71 @@ export default function AdminConsultationsPage() {
     }
   }
 
+  /**
+   * Bulk-create September consultation slots via the admin API.
+   *
+   * Confirms with the user (typical run: ~150 slots) and surfaces a clear
+   * success/error banner. The API endpoint is admin-auth-protected; a missing
+   * token there produces a 401 which we surface as a friendly error.
+   */
+  async function handleBulkSeed() {
+    const ok = confirm(
+      "Generate September consultation slots?\n\n" +
+        "• Mon–Thu\n" +
+        "• 11:00 AM – 4:00 PM\n" +
+        "• 30-minute slots\n" +
+        "• ₹555 per slot\n\n" +
+        "Existing slots in that range will be skipped (idempotent)."
+    );
+    if (!ok) return;
+
+    setIsSeeding(true);
+    setLastSeedResult(null);
+    try {
+      const token = await firebaseUser?.getIdToken();
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (token) headers.Authorization = `Bearer ${token}`;
+
+      const res = await fetch("/api/admin/seed-slots", {
+        method: "POST",
+        headers,
+        body: JSON.stringify({}),
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        setLastSeedResult({
+          created: 0,
+          skippedExisting: 0,
+          days: 0,
+          slotsPerDay: 0,
+          errors: [],
+          error: data.error || `Request failed with status ${res.status}`,
+        });
+        return;
+      }
+      setLastSeedResult({
+        created: data.created,
+        skippedExisting: data.skippedExisting,
+        days: data.days,
+        slotsPerDay: data.slotsPerDay,
+        errors: data.errors ?? [],
+      });
+      await loadData();
+    } catch (err) {
+      console.error(err);
+      setLastSeedResult({
+        created: 0,
+        skippedExisting: 0,
+        days: 0,
+        slotsPerDay: 0,
+        errors: [],
+        error: err instanceof Error ? err.message : "Unknown error",
+      });
+    } finally {
+      setIsSeeding(false);
+    }
+  }
+
   const filteredBookings = bookings.filter((b) => {
     // Hide transient pre-payment bookings; the sweep cancels them after 15 min.
     if (b.status === "pending") return false;
@@ -325,10 +398,42 @@ export default function AdminConsultationsPage() {
       <div className="mb-8 rounded-2xl bg-white p-6 shadow-soft">
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="font-serif text-xl font-bold text-tattvam-purple-900">Availability Slots</h2>
-          <button onClick={openAddSlot} className="btn-primary text-sm">
-            ➕ Add Slot
-          </button>
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={handleBulkSeed}
+              disabled={isSeeding}
+              className="rounded-full border border-tattvam-gold-400 bg-tattvam-gold-50 px-4 py-2 text-sm font-semibold text-tattvam-gold-700 transition hover:bg-tattvam-gold-100 disabled:cursor-not-allowed disabled:opacity-60"
+              title="Bulk-create September slots: Mon–Thu, 11:00–16:00, 30 min, ₹555 each."
+            >
+              {isSeeding ? "Generating…" : "✨ Generate September Slots"}
+            </button>
+            <button onClick={openAddSlot} className="btn-primary text-sm">
+              ➕ Add Slot
+            </button>
+          </div>
         </div>
+
+        {lastSeedResult && (
+          <div
+            className={`mb-4 rounded-xl px-4 py-3 text-xs ${
+              lastSeedResult.error
+                ? "bg-red-50 text-red-700"
+                : "bg-tattvam-gold-50 text-tattvam-gold-800"
+            }`}
+          >
+            {lastSeedResult.error
+              ? `Bulk seed failed: ${lastSeedResult.error}`
+              : `Bulk seed complete — ${lastSeedResult.created} new slot${
+                  lastSeedResult.created === 1 ? "" : "s"
+                } created across ${lastSeedResult.days} day${
+                  lastSeedResult.days === 1 ? "" : "s"
+                }${
+                  lastSeedResult.skippedExisting
+                    ? `, ${lastSeedResult.skippedExisting} already existed (skipped)`
+                    : ""
+                }.`}
+          </div>
+        )}
 
         {slots.length === 0 ? (
           <p className="text-sm text-tattvam-purple-400">No slots created yet. Add slots to make them available for booking.</p>

@@ -999,6 +999,12 @@ export default function HomePage() {
                   <Link href="/services">Workshops</Link>
                 </li>
                 <li>
+                  <Link href="/services/kalaripayattu">Kalari Payattu</Link>
+                </li>
+                <li>
+                  <Link href="/services/project-ananda">Project Ananda</Link>
+                </li>
+                <li>
                   <Link href="/courses">Courses</Link>
                 </li>
               </ul>
@@ -1027,13 +1033,20 @@ export default function HomePage() {
           <div className="divider-gold mt-8" />
 
           <div className="mt-8 flex flex-col items-center justify-between gap-4 text-center text-sm text-tattvam-purple-500 md:flex-row">
-            <p>© 2026 Tattvam Niramaya. All rights reserved.</p>
-            <div className="flex items-center gap-4">
+            <p>© 2026 Tattvam Niramaya Academy. All rights reserved.</p>
+            <div className="flex flex-wrap items-center justify-center gap-3">
               <Link
                 href="/privacy-policy"
                 className="transition hover:text-tattvam-purple-700"
               >
                 Privacy Policy
+              </Link>
+              <span className="text-tattvam-purple-300">·</span>
+              <Link
+                href="/terms-conditions"
+                className="transition hover:text-tattvam-purple-700"
+              >
+                Terms &amp; Conditions
               </Link>
               <span className="text-tattvam-purple-300">·</span>
               <p>Made with ✧ for healing</p>

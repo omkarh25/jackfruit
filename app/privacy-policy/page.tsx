@@ -1,8 +1,19 @@
+import type { Metadata } from "next";
+import Link from "next/link";
 import { PageShell } from "@/components/app-shell/page-shell";
 
-export const metadata = {
+// ─── SEO (per webpgChanges/metadescriptions.md) ───────────────────────────
+export const metadata: Metadata = {
   title: "Privacy Policy | Tattvam Niramaya",
-  description: "Privacy policy for HemaTheHealer and Tattvam Niramaya.",
+  description:
+    "Read the Tattvam Niramaya privacy policy to understand how we collect, use, protect and manage your personal information and data.",
+  alternates: { canonical: "/privacy-policy" },
+  openGraph: {
+    title: "Privacy Policy | Tattvam Niramaya",
+    description:
+      "Read the Tattvam Niramaya privacy policy to understand how we collect, use, protect and manage your personal information and data.",
+    url: "https://tattvamniramaya.com/privacy-policy",
+  },
 };
 
 export default function PrivacyPolicyPage() {
@@ -131,6 +142,17 @@ export default function PrivacyPolicyPage() {
         <p className="mt-8 text-sm text-tattvam-purple-500">
           This policy may be updated from time to time to reflect changes in our practices.
         </p>
+
+        <div className="mt-8 border-t border-tattvam-purple-100 pt-6 text-sm text-tattvam-purple-500">
+          See also our{" "}
+          <Link
+            href="/terms-conditions"
+            className="font-medium text-tattvam-purple-700 underline hover:text-tattvam-purple-900"
+          >
+            Terms &amp; Conditions
+          </Link>
+          .
+        </div>
       </div>
     </PageShell>
   );

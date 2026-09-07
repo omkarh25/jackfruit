@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { verifyRazorpaySignature } from "@/lib/payment";
 import { getAdminDb } from "@/lib/firebase-admin";
-import { sendConfirmationEmail } from "@/lib/notification-helpers";
+import {
+  sendConfirmationEmail,
+  sendAdminPaymentNotification,
+} from "@/lib/notification-helpers";
 import { incrementCouponUsageAdmin } from "@/lib/coupon-validation";
 
 export interface VerifyPaymentRequestBody {
@@ -134,6 +137,39 @@ export async function POST(req: Request) {
         heldAt: null,
         updatedAt: new Date(),
       });
+    }
+
+    // 7. Notify the admin (always — business inbox receives a copy of every
+    // successful consultation payment). Failures are swallowed inside the
+    // helper so they never block the verify response.
+    try {
+      const amount = paymentData?.amount as number | undefined;
+      await sendAdminPaymentNotification({
+        itemType: "consultation",
+        itemTitle: (bookingSnap.exists ? bookingSnap.data()?.serviceId : "") as string || "1:1 Consultation",
+        orderId: razorpay_order_id,
+        razorpayPaymentId: razorpay_payment_id,
+        amount,
+        customerName:
+          (bookingSnap.exists ? bookingSnap.data()?.clientName : "") || "",
+        customerEmail:
+          (bookingSnap.exists ? bookingSnap.data()?.clientEmail : "") || "",
+        customerPhone: bookingSnap.exists
+          ? ((bookingSnap.data()?.clientPhone as string | undefined) ?? undefined)
+          : undefined,
+        date: bookingSnap.exists
+          ? ((bookingSnap.data()?.slotDate as string | undefined) ?? undefined)
+          : undefined,
+        time: bookingSnap.exists
+          ? ((bookingSnap.data()?.slotTime as string | undefined) ?? undefined)
+          : undefined,
+        extras: {
+          bookingId,
+          meetingLink: meetingLink ?? undefined,
+        },
+      });
+    } catch (adminErr) {
+      console.error("[verify-payment] Failed to send admin payment notification:", adminErr);
     }
 
     return NextResponse.json<VerifyPaymentResponse>({

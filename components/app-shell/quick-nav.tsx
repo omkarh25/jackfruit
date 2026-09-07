@@ -135,6 +135,9 @@ export function QuickNav() {
         <Link href="/services/project-ananda" className={linkClass}>
           Project Ananda
         </Link>
+        <Link href="/services/kalaripayattu" className={linkClass}>
+          Kalari Payattu
+        </Link>
         <Link href="/courses" className={linkClass}>
           Courses
         </Link>

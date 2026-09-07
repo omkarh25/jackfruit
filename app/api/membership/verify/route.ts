@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { verifyRazorpaySignature } from "@/lib/payment";
 import { getAdminDb } from "@/lib/firebase-admin";
-import { sendConfirmationEmail } from "@/lib/notification-helpers";
+import {
+  sendConfirmationEmail,
+  sendAdminPaymentNotification,
+} from "@/lib/notification-helpers";
 import { incrementCouponUsageAdmin } from "@/lib/coupon-validation";
 
 export interface VerifyMembershipRequest {
@@ -152,6 +155,28 @@ export async function POST(req: Request) {
           userId,
           amount: paymentData?.amount,
         });
+      }
+
+      // Notify the admin of every successful membership payment.
+      try {
+        await sendAdminPaymentNotification({
+          itemType: "membership",
+          itemTitle: (paymentData?.itemTitle as string) || "Project Ananda Membership",
+          orderId: razorpay_order_id,
+          razorpayPaymentId: razorpay_payment_id,
+          amount: paymentData?.amount,
+          customerName,
+          customerEmail,
+          date: "Ongoing program",
+          extras: {
+            tier: (paymentData?.membershipTier as string) ?? undefined,
+            durationMonths: paymentData?.durationMonths
+              ? String(paymentData.durationMonths)
+              : undefined,
+          },
+        });
+      } catch (adminErr) {
+        console.error("[membership/verify] Failed to send admin payment notification:", adminErr);
       }
     } catch (emailErr) {
       console.error("[membership/verify] Failed to send confirmation email:", emailErr);

@@ -7,7 +7,7 @@ export const services: readonly ServiceOffering[] = [
     title: "Project Ananda",
     description: "A structured wellness journey designed to bring your Body, Mind, and Emotions into balance — through movement, healing, awareness, and guided growth.",
     duration: "Ongoing program",
-    price: "Contact for pricing",
+    price: "Try and Buy",
     outcomes: ["3-Step Diagnosis System", "Personalized guidance", "Body-Mind-Emotion alignment"]
   },
   {
